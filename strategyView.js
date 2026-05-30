@@ -7,6 +7,7 @@ import { store } from './store.js';
 class StrategyView {
     constructor() {
         this.containerId = "view-content";
+        this.expandedIds = new Set(); // Tracks expanded strategy card IDs
     }
 
     render(state) {
@@ -36,7 +37,7 @@ class StrategyView {
         const activeNodes = relevanceMap[level];
         const isLowRelevance = (nodeId) => activeNodes !== null && activeNodes !== undefined && !activeNodes.includes(nodeId);
 
-        // Render strategy page layout
+        // Render strategy page layout with tiers stacked from top to bottom
         container.innerHTML = `
             <div class="strategy-workspace">
                 <!-- Staggered timeline slider panel -->
@@ -52,95 +53,128 @@ class StrategyView {
                     </div>
                 </div>
 
-                <!-- Strategy Matrix Layout -->
-                <div class="strategy-row full">
-                    <!-- Tier 1: Enterprise Strategy -->
+                <!-- Strategy Matrix Layout - Vertically Cascading Tiers -->
+                
+                <!-- Tier 1: Enterprise Strategy -->
+                <div class="strategy-row full" style="margin-bottom: 24px;">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
                             <h3>Tier 1: Enterprise Strategy (The "Why")</h3>
                             <span class="tier-badge">Vision</span>
                         </div>
-                        <div class="glass-panel strategy-node-card selected ${isLowRelevance('strat-pacific-lead') ? 'low-relevance' : ''}" id="strategy-root" data-node="strat">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="glass-panel strategy-node-card selected ${isLowRelevance('strat-pacific-lead') ? 'low-relevance' : ''}" id="strategy-root" data-node="strat" data-id="strat">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
                                 <div style="max-width: 80%">
                                     <h4>${state.strategy.title}</h4>
                                     <p>${state.strategy.description}</p>
                                 </div>
-                                <div class="footer-stats" style="padding: 6px 12px;">
-                                    <div class="f-stat" style="align-items: center;">
-                                        <span class="stat-lbl">Strategic Health</span>
-                                        <span class="stat-val" style="color: var(--color-success); font-size: 16px;">${state.strategy.health}%</span>
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div class="footer-stats" style="padding: 6px 12px; margin: 0; display: inline-flex; border: none; background: hsla(0,0%,100%,0.03);">
+                                        <div class="f-stat" style="align-items: center; margin: 0; padding: 0;">
+                                            <span class="stat-lbl" style="font-size: 9px; text-transform: uppercase;">Strategic Health</span>
+                                            <span class="stat-val" style="color: var(--color-success); font-size: 15px; font-weight: 700;">${state.strategy.health}%</span>
+                                        </div>
                                     </div>
+                                    <button class="tile-expand-btn ${this.expandedIds.has('strat') ? 'expanded' : ''}" data-id="strat" data-type="strat" title="Toggle contributing projects">
+                                        <span class="material-symbols-outlined">${this.expandedIds.has('strat') ? 'expand_less' : 'expand_more'}</span>
+                                    </button>
                                 </div>
                             </div>
+                            
+                            <!-- Inline Expanded Projects -->
+                            ${this.renderInlineContributingProjects('strat', 'strat', state)}
                         </div>
                     </div>
                 </div>
 
-                <div class="strategy-row">
-                    <!-- Tier 2: Strategic Objectives / OKRs -->
+                <!-- Tier 2: Strategic Objectives / OKRs -->
+                <div class="strategy-row full" style="margin-bottom: 24px;">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
                             <h3>Tier 2: Objectives & OKRs (The "What")</h3>
                             <span class="tier-badge">OKRs</span>
                         </div>
-                        <div class="strategy-list" id="okr-list-container">
-                            ${state.strategy.objectives.map(okr => `
-                                <div class="strategy-node-card ${isLowRelevance(okr.id) ? 'low-relevance' : ''}" id="node-${okr.id}" data-node="okr" data-id="${okr.id}">
-                                    <h4>${okr.title}</h4>
-                                    <div class="benefit-progress-row">
-                                        <div class="benefit-progress-bar">
-                                            <div class="benefit-progress-fill" style="width: ${(okr.current / okr.target) * 100}%"></div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;" id="okr-list-container">
+                            ${state.strategy.objectives.map(okr => {
+                                const isExpanded = this.expandedIds.has(okr.id);
+                                return `
+                                    <div class="strategy-node-card ${isLowRelevance(okr.id) ? 'low-relevance' : ''}" id="node-${okr.id}" data-node="okr" data-id="${okr.id}">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                            <h4 style="margin: 0; font-size: 14px; font-weight: 700;">${okr.title}</h4>
+                                            <button class="tile-expand-btn ${isExpanded ? 'expanded' : ''}" data-id="${okr.id}" data-type="okr" title="Toggle contributing projects">
+                                                <span class="material-symbols-outlined">${isExpanded ? 'expand_less' : 'expand_more'}</span>
+                                            </button>
                                         </div>
-                                        <span class="stat-val" style="font-size: 11px;">${okr.current}/${okr.target}${okr.unit}</span>
+                                        <div class="benefit-progress-row" style="margin-top: 12px;">
+                                            <div class="benefit-progress-bar">
+                                                <div class="benefit-progress-fill" style="width: ${(okr.current / okr.target) * 100}%"></div>
+                                            </div>
+                                            <span class="stat-val" style="font-size: 11px;">${okr.current}/${okr.target}${okr.unit}</span>
+                                        </div>
+                                        
+                                        <!-- Inline Expanded Projects -->
+                                        ${this.renderInlineContributingProjects(okr.id, 'okr', state)}
                                     </div>
-                                </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Tier 3: Business Outcomes / Benefits Zone -->
+                <!-- Tier 3: Business Outcomes / Benefits Zone -->
+                <div class="strategy-row full" style="margin-bottom: 24px;">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
                             <h3>Tier 3: Business Outcomes & Benefits (The "Benefit")</h3>
                             <span class="tier-badge">Benefits</span>
                         </div>
-                        <div class="strategy-list" id="benefit-list-container">
-                            ${state.benefits.map(b => `
-                                <div class="strategy-node-card benefit-profile-card ${b.isDisbenefit ? 'disbenefit' : ''} ${isLowRelevance(b.id) ? 'low-relevance' : ''}" 
-                                     id="node-${b.id}" data-node="benefit" data-id="${b.id}">
-                                    <span class="benefit-badge ${b.isDisbenefit ? 'disben' : 'ben'}">
-                                        ${b.isDisbenefit ? 'Disbenefit' : 'Benefit'}
-                                    </span>
-                                    <h4>${b.name}</h4>
-                                    
-                                    <div class="benefit-meta-grid">
-                                        <div class="benefit-meta-item">
-                                            <small>Owner Accountable</small>
-                                            <p>${b.owner.split(' ')[0]}</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;" id="benefit-list-container">
+                            ${state.benefits.map(b => {
+                                const isExpanded = this.expandedIds.has(b.id);
+                                return `
+                                    <div class="strategy-node-card benefit-profile-card ${b.isDisbenefit ? 'disbenefit' : ''} ${isLowRelevance(b.id) ? 'low-relevance' : ''}" 
+                                         id="node-${b.id}" data-node="benefit" data-id="${b.id}">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                            <span class="benefit-badge ${b.isDisbenefit ? 'disben' : 'ben'}" style="position: static; margin-bottom: 0;">
+                                                ${b.isDisbenefit ? 'Disbenefit' : 'Benefit'}
+                                            </span>
+                                            <button class="tile-expand-btn ${isExpanded ? 'expanded' : ''}" data-id="${b.id}" data-type="benefit" title="Toggle contributing projects">
+                                                <span class="material-symbols-outlined">${isExpanded ? 'expand_less' : 'expand_more'}</span>
+                                            </button>
                                         </div>
-                                        <div class="benefit-meta-item">
-                                            <small>Realization Lag</small>
-                                            <p>${b.realizationTimeline.startOffsetMonths}m lag (${b.realizationTimeline.durationMonths}m run)</p>
+                                        <h4 style="margin-top: 8px; margin-bottom: 0; font-size: 14px; font-weight: 700; text-align: left;">${b.name}</h4>
+                                        
+                                        <div class="benefit-meta-grid" style="margin-top: 10px;">
+                                            <div class="benefit-meta-item">
+                                                <small>Owner Accountable</small>
+                                                <p>${b.owner.split(' ')[0]}</p>
+                                            </div>
+                                            <div class="benefit-meta-item">
+                                                <small>Realization Lag</small>
+                                                <p>${b.realizationTimeline.startOffsetMonths}m lag (${b.realizationTimeline.durationMonths}m run)</p>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="benefit-progress-row">
-                                        <div class="benefit-progress-bar">
-                                            <div class="benefit-progress-fill" style="width: ${((b.metric.current - b.metric.baseline) / (b.metric.target - b.metric.baseline)) * 100}%"></div>
+                                        <div class="benefit-progress-row" style="margin-top: 14px;">
+                                            <div class="benefit-progress-bar">
+                                                <div class="benefit-progress-fill" style="width: ${((b.metric.current - b.metric.baseline) / (b.metric.target - b.metric.baseline)) * 100}%"></div>
+                                            </div>
+                                            <span class="stat-val" style="font-size: 11px;">
+                                                ${b.metric.current.toLocaleString()}/${b.metric.target.toLocaleString()}${b.metric.unit}
+                                            </span>
                                         </div>
-                                        <span class="stat-val" style="font-size: 11px;">
-                                            ${b.metric.current.toLocaleString()}/${b.metric.target.toLocaleString()}${b.metric.unit}
-                                        </span>
+                                        
+                                        <!-- Inline Expanded Projects -->
+                                        ${this.renderInlineContributingProjects(b.id, 'benefit', state)}
                                     </div>
-                                </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 </div>
 
+                <!-- Tier 4 & 5: Project Scope / Execution -->
                 <div class="strategy-row full">
-                    <!-- Tier 4 & 5: Project Scope / Execution -->
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
                             <h3>Tier 4: Active Execution Scopes & Outputs (The "How")</h3>
@@ -150,14 +184,14 @@ class StrategyView {
                             ${state.scopes.map(s => {
                                 const isIncluded = state.scenario.includedProjectIds.includes(s.id);
                                 return `
-                                    <div class="strategy-node-card ${isLowRelevance(s.id) ? 'low-relevance' : ''}" style="opacity: ${isIncluded ? (isLowRelevance(s.id) ? '0.22' : '1') : '0.4'}" id="node-${s.id}" data-node="scope" data-id="${s.id}">
+                                    <div class="strategy-node-card ${isLowRelevance(s.id) ? 'low-relevance' : ''}" style="opacity: ${isIncluded ? (isLowRelevance(s.id) ? '0.22' : '1') : '0.4'}; cursor: pointer;" id="node-${s.id}" data-node="scope" data-id="${s.id}">
                                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                            <h4 style="max-width: 70%;">${s.name}</h4>
+                                            <h4 style="max-width: 70%; text-align: left;">${s.name}</h4>
                                             <span class="benefit-badge" style="background: hsla(250,95%,68%,0.1); color: var(--accent-indigo); position: static;">
                                                 ${s.methodology}
                                             </span>
                                         </div>
-                                        <p>${s.description}</p>
+                                        <p style="text-align: left;">${s.description}</p>
                                         
                                         <div class="benefit-meta-grid" style="margin-top: 10px;">
                                             <div class="benefit-meta-item">
@@ -200,6 +234,93 @@ class StrategyView {
         setTimeout(() => this.drawAlignmentLines(state), 50);
     }
 
+    renderInlineContributingProjects(id, type, state) {
+        const isExpanded = this.expandedIds.has(id);
+        
+        let contributingScopes = [];
+        if (type === "strat") {
+            contributingScopes = state.scopes;
+        } else if (type === "okr") {
+            const alignedBens = state.benefits.filter(b => b.alignedOkrId === id);
+            const scopeIds = [];
+            alignedBens.forEach(b => b.scopeDependencies.forEach(sid => {
+                if (!scopeIds.includes(sid)) scopeIds.push(sid);
+            }));
+            contributingScopes = scopeIds.map(sid => state.scopes.find(s => s.id === sid)).filter(Boolean);
+        } else if (type === "benefit") {
+            const ben = state.benefits.find(b => b.id === id);
+            if (ben) {
+                contributingScopes = ben.scopeDependencies.map(sid => state.scopes.find(s => s.id === sid)).filter(Boolean);
+            }
+        }
+
+        if (contributingScopes.length === 0) return "";
+
+        return `
+            <div class="contributing-projects-inline ${isExpanded ? '' : 'hidden'}" id="expand-container-${id}">
+                <div class="expanded-projects-header">Contributing Deliverables</div>
+                <div class="expanded-projects-list">
+                    ${contributingScopes.map(scope => {
+                        const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
+                        
+                        let statusClass = "realizing";
+                        let statusText = "Realizing";
+                        
+                        const isDelayed = state.scenario.scheduleOffsets[scope.id] > 0;
+                        if (!isIncluded || scope.status === "Proposed") {
+                            statusClass = "proposed";
+                            statusText = "Proposed";
+                        } else if (isDelayed) {
+                            statusClass = "delayed";
+                            statusText = "Delayed";
+                        } else {
+                            const alignedBens = state.benefits.filter(b => b.scopeDependencies.includes(scope.id));
+                            const isMaturing = alignedBens.every(ben => state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths);
+                            if (isMaturing) {
+                                statusClass = "maturing";
+                                statusText = "Maturing";
+                            }
+                        }
+                        
+                        let weightText = "";
+                        if (type === "benefit") {
+                            const b = state.benefits.find(ben => ben.id === id);
+                            const weight = b.contributionWeights ? (b.contributionWeights[scope.id] || 100) : 100;
+                            weightText = `<span class="proj-weight-badge">${weight}% share</span>`;
+                        } else if (type === "okr") {
+                            const bens = state.benefits.filter(ben => ben.alignedOkrId === id && ben.scopeDependencies.includes(scope.id));
+                            let avgW = 0;
+                            bens.forEach(ben => {
+                                avgW += ben.contributionWeights ? (ben.contributionWeights[scope.id] || 100) : 100;
+                            });
+                            avgW = bens.length ? Math.round(avgW / bens.length) : 100;
+                            weightText = `<span class="proj-weight-badge">${avgW}% avg</span>`;
+                        } else if (type === "strat") {
+                            const bens = state.benefits.filter(ben => ben.scopeDependencies.includes(scope.id));
+                            let avgW = 0;
+                            bens.forEach(ben => {
+                                avgW += ben.contributionWeights ? (ben.contributionWeights[scope.id] || 100) : 100;
+                            });
+                            avgW = bens.length ? Math.round(avgW / bens.length) : 100;
+                            weightText = `<span class="proj-weight-badge">${avgW}% avg</span>`;
+                        }
+
+                        return `
+                            <div class="expanded-project-row">
+                                <span class="proj-name" title="${scope.name}">${scope.name}</span>
+                                <div class="proj-info">
+                                    ${weightText}
+                                    <span class="proj-status-badge ${statusClass}">${statusText}</span>
+                                    <span style="font-weight:700; color:var(--color-text-primary); font-size:10px;">${scope.progress}%</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
     bindEvents() {
         // Realization Month Slider input
         const slider = document.getElementById("realization-month-slider");
@@ -234,6 +355,42 @@ class StrategyView {
                 const type = card.dataset.node;
                 const id = card.dataset.id || "strat";
                 this.openContributionInspector(type, id, store.state);
+            });
+        });
+
+        // Expand/Collapse card triggers
+        const expandBtns = document.querySelectorAll(".tile-expand-btn");
+        expandBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation(); // Stop click from opening modal
+                const id = btn.dataset.id;
+                const container = document.getElementById(`expand-container-${id}`);
+                
+                if (container) {
+                    const isExpanded = this.expandedIds.has(id);
+                    if (isExpanded) {
+                        this.expandedIds.delete(id);
+                        btn.classList.remove("expanded");
+                        btn.querySelector(".material-symbols-outlined").textContent = "expand_more";
+                        container.classList.add("hidden");
+                    } else {
+                        this.expandedIds.add(id);
+                        btn.classList.add("expanded");
+                        btn.querySelector(".material-symbols-outlined").textContent = "expand_less";
+                        container.classList.remove("hidden");
+                    }
+                    
+                    // Immediately recalculate lines because element heights shifted!
+                    this.drawAlignmentLines(store.state);
+                }
+            });
+        });
+
+        // Prevent modal click inside expanded projects container
+        const inlineContainers = document.querySelectorAll(".contributing-projects-inline");
+        inlineContainers.forEach(container => {
+            container.addEventListener("click", (e) => {
+                e.stopPropagation(); // Stop click from bubbling up to the card, preventing the modal from popping up!
             });
         });
     }
