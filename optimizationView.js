@@ -73,7 +73,7 @@ class OptimizationView {
                             <label>Scenario Budget Limit Cap</label>
                             <div class="priority-slider-header">
                                 <span>${currentBounds.budgetLabelMin}</span>
-                                <span id="opt-budget-cap-val" style="color: var(--accent-indigo)">$${state.scenario.budgetCap.toLocaleString()} USD</span>
+                                <span id="opt-budget-cap-val" style="color: var(--accent-indigo)">NZ$${state.scenario.budgetCap.toLocaleString()}</span>
                                 <span>${currentBounds.budgetLabelMax}</span>
                             </div>
                             <input type="range" id="opt-budget-cap" min="${currentBounds.budgetMin}" max="${currentBounds.budgetMax}" step="${currentBounds.budgetStep}" value="${state.scenario.budgetCap}" style="accent-color: var(--accent-indigo);">
@@ -92,7 +92,7 @@ class OptimizationView {
                         <div class="cons-indicators">
                             <div class="cons-card">
                                 <span class="cons-card-lbl">Portfolio Budget Cost</span>
-                                <div class="cons-card-val">$${totalActiveCost.toLocaleString()} USD</div>
+                                <div class="cons-card-val">NZ$${totalActiveCost.toLocaleString()}</div>
                                 <div class="cons-card-bar ${budgetOverload ? 'overload' : ''}">
                                     <div class="cons-card-bar-fill" style="width: ${Math.min((totalActiveCost / state.scenario.budgetCap) * 100, 100)}%"></div>
                                 </div>
@@ -127,7 +127,7 @@ class OptimizationView {
                                         
                                         <!-- Delay Timeline offset sliders -->
                                         <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-end;">
-                                            <span class="cost-val">$${cost.toLocaleString()}</span>
+                                            <span class="cost-val">NZ$${cost.toLocaleString()}</span>
                                             <div style="display: flex; align-items: center; gap: 6px;">
                                                 <small style="font-size: 8px; color: var(--color-text-muted);">Delay Offset:</small>
                                                 <input type="range" class="project-delay-slider" data-id="${scope.id}" min="0" max="12" value="${state.scenario.scheduleOffsets[scope.id] || 0}" style="width: 60px; accent-color: var(--accent-indigo); height: 4px;">
@@ -256,7 +256,7 @@ class OptimizationView {
         if (budgetSlider) {
             budgetSlider.addEventListener("input", (e) => {
                 const cap = parseInt(e.target.value);
-                if (budgetVal) budgetVal.textContent = `$${cap.toLocaleString()} USD`;
+                if (budgetVal) budgetVal.textContent = `NZ$${cap.toLocaleString()}`;
                 
                 // Silent state updates
                 store.state.scenario.budgetCap = cap;

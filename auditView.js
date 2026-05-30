@@ -29,11 +29,6 @@ class AuditView {
         // Render audit timeline layout
         container.innerHTML = `
             <div class="audit-workspace">
-                <div class="view-title-container" style="padding: 0; margin-bottom: 24px;">
-                    <h3>State-Level Audit Log Ledger</h3>
-                    <p class="help-text">Review every single workspace modification. Click "Rollback" to reverse any transaction and recalculate downstream cascades in reverse.</p>
-                </div>
-
                 <div class="audit-timeline">
                     ${logs.map(tx => {
                         const isAi = tx.actor.includes("AI");

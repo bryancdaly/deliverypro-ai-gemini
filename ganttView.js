@@ -26,11 +26,6 @@ class GanttView {
         // Render gantt layout
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
-                <div class="view-title-container" style="padding: 0;">
-                    <h3>AI Gantt Schedule & Dependency Timeline</h3>
-                    <p class="help-text">Review horizontal delivery tracks. Shifting predecessors dynamically recalculates downstream timelines.</p>
-                </div>
-
                 <!-- Simulation delay slider -->
                 <div class="glass-panel realization-slider-panel" style="margin-top: 0; display: ${level === 'project' ? 'none' : 'flex'}">
                     <span class="material-symbols-outlined icon-btn" style="color: var(--color-warning)">warning</span>

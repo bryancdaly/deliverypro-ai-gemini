@@ -99,8 +99,8 @@ class DeliveryProAIEngine {
 Your workspace state is passed below. You must reference actual projects, OKRs, benefits, and costs in your responses.
 
 Current Portfolio State:
-- Enterprise Strategy: "${state.strategy.title}"
-- Active Objectives: ${JSON.stringify(state.strategy.objectives)}
+- Enterprise Strategy: "${state.strategy.map(s=>s.title).join(', ')}"
+- Active Objectives: ${JSON.stringify(state.strategy.flatMap(s=>s.objectives))}
 - Aligned Benefits: ${JSON.stringify(state.benefits.map(b => ({ id: b.id, name: b.name, current: b.metric.current, target: b.metric.target })))}
 - Project Scopes: ${JSON.stringify(state.scopes.map(s => ({ id: s.id, name: s.name, progress: s.progress, capEx: s.financials.capEx.plan, fte: s.fteAllocations })))}
 - Active Tasks: ${JSON.stringify(state.tasks.map(t => ({ title: t.title, scopeId: t.scopeId, status: t.status, assignee: t.assignee })))}
@@ -200,7 +200,7 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
                 proposal: {
                     actionLabel: `Promote "${title}" to active Portfolio`,
                     diffs: [
-                        `[NEW] Project Scope: "${title}" (${capEx + opEx} USD budget)`,
+                        `[NEW] Project Scope: "${title}" (NZ$${(capEx + opEx).toLocaleString()} budget)`,
                         `[NEW] 3 default activities assigned to John Doe & Sarah Connor`,
                         `[LINK] Connect scope enablers to Benefit: "${isBamboo ? 'Low-Emission logistics' : 'Annual operations savings'}"`
                     ],
@@ -225,11 +225,11 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
             
             return {
                 text: `<p>I have parsed your directive to run our <b>Efficient Frontier Portfolio Optimization Solver</b>.</p>
-                <p>Accounting for the ${isCut ? '20% budget reduction' : 'current state constraints'} (Budget Cap: $${newCap.toLocaleString()}), the solver will identify the project combination that yields the highest Strategic Value index with the minimal Execution Risk coefficient.</p>`,
+                <p>Accounting for the ${isCut ? '20% budget reduction' : 'current state constraints'} (Budget Cap: NZ$${newCap.toLocaleString()}), the solver will identify the project combination that yields the highest Strategic Value index with the minimal Execution Risk coefficient.</p>`,
                 proposal: {
-                    actionLabel: isCut ? "Run AI Optimization (Fit $1.0M budget)" : "Run AI Allocation & FTE Balancing Solver",
+                    actionLabel: isCut ? "Run AI Optimization (Fit NZ$1.0M budget)" : "Run AI Allocation & FTE Balancing Solver",
                     diffs: [
-                        `Adjust Portfolio Budget Cap slider constraint to $${newCap.toLocaleString()}`,
+                        `Adjust Portfolio Budget Cap constraint to NZ$${newCap.toLocaleString()}`,
                         `Include high-ROI "Route Optimization" and "Transit Fleet" scopes`,
                         `Exclude lower-scoring "Warehouse Safety Module" to preserve capital efficiency`,
                         `Verify that resource allocations fall within the 15 FTE cap`
@@ -274,7 +274,7 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
 
         // 4. INVESTIGATION: OKR ALIGNMENT
         if (p.includes("okr") || p.includes("alignment") || p.includes("logistics")) {
-            const emissionsOkr = state.strategy.objectives.find(o => o.id === "okr-emissions");
+            const emissionsOkr = state.strategy.flatMap(s=>s.objectives).find(o => o.id === "okr-emissions");
             const alignedBens = state.benefits.filter(b => b.alignedOkrId === emissionsOkr.id);
 
             let resText = `<p>Here is the top-down alignment profile for the <b>${emissionsOkr.title}</b> objective:</p>
@@ -304,7 +304,7 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
         if (p.includes("report") || p.includes("synthesize") || p.includes("brief")) {
             return {
                 text: `<p>I have aggregated the active portfolio status indicators and prepared an executive strategic brief summary.</p>
-                <p>The brief details overall strategy health at <b>${state.strategy.health}%</b>, details our two active OKRs, lists CapEx spend limits, and summarizes disbenefits latency.</p>
+                <p>The brief details overall strategy health at <b>${Math.round(state.strategy.reduce((acc,s)=>acc+s.health, 0) / Math.max(state.strategy.length, 1))}%</b>, details active OKRs, lists CapEx spend limits, and summarizes disbenefits latency.</p>
                 <p>You can view this compiled presentation format and instantly trigger a high-fidelity PDF print layout by navigating to the <b>Executive Synthesizer</b> tab in the sidebar.</p>`,
                 proposal: null
             };

@@ -7,30 +7,33 @@ class DeliveryProStore {
         // Initial core state
         this.state = {
             // Tier 1 & 2: Strategy & Objectives
-            strategy: {
-                id: "strat-pacific-lead",
-                title: "Become the leading sustainable agricultural exporter in the Pacific",
-                description: "Maximize regional trade footprint while reducing operational carbon intensity across our supply chains.",
-                health: 0, // Calculated dynamically
-                objectives: [
-                    {
-                        id: "okr-emissions",
-                        title: "Reduce corporate supply chain carbon emissions by 15% by Q4",
-                        metric: "Carbon emissions reduction",
-                        target: 15,
-                        current: 0, // Calculated dynamically
-                        unit: "%"
-                    },
-                    {
-                        id: "okr-margin",
-                        title: "Improve corporate operational margin by 3% this fiscal year",
-                        metric: "Operational margin expansion",
-                        target: 3,
-                        current: 0, // Calculated dynamically
-                        unit: "%"
-                    }
-                ]
-            },
+            strategy: [
+                {
+                    id: "strat-pacific-lead",
+                    title: "Become the leading sustainable agricultural exporter in the Pacific",
+                    description: "Maximize regional trade footprint while reducing operational carbon intensity across our supply chains.",
+                    health: 0, // Calculated dynamically
+                    isArchived: false,
+                    objectives: [
+                        {
+                            id: "okr-emissions",
+                            title: "Reduce corporate supply chain carbon emissions by 15% by Q4",
+                            metric: "Carbon emissions reduction",
+                            target: 15,
+                            current: 0, // Calculated dynamically
+                            unit: "%"
+                        },
+                        {
+                            id: "okr-margin",
+                            title: "Improve corporate operational margin by 3% this fiscal year",
+                            metric: "Operational margin expansion",
+                            target: 3,
+                            current: 0, // Calculated dynamically
+                            unit: "%"
+                        }
+                    ]
+                }
+            ],
             
             // Tier 3: Business Outcomes / Benefits & Disbenefits ("Benefits Zone")
             benefits: [
@@ -56,7 +59,7 @@ class DeliveryProStore {
                 },
                 {
                     id: "ben-ops-savings",
-                    name: "Save $500,000 annually in warehouse operations and inventory carrying costs",
+                    name: "Save NZ$500,000 annually in warehouse operations and inventory carrying costs",
                     isDisbenefit: false,
                     alignedOkrId: "okr-margin",
                     metric: {
@@ -102,6 +105,8 @@ class DeliveryProStore {
                     description: "Deploy an advanced routing API to optimize deliveries and minimize empty miles.",
                     methodology: "Agile",
                     status: "In Flight",
+                    startDate: "2024-02-01",
+                    endDate: "2024-10-31",
                     expectedValue: 85,
                     executionRisk: 30, // 0 - 100
                     financials: {
@@ -117,6 +122,8 @@ class DeliveryProStore {
                     description: "Procure and onboard new hybrid-electric heavy commercial freight trucks.",
                     methodology: "Waterfall",
                     status: "In Flight",
+                    startDate: "2024-01-15",
+                    endDate: "2025-03-31",
                     expectedValue: 95,
                     executionRisk: 55,
                     financials: {
@@ -132,6 +139,8 @@ class DeliveryProStore {
                     description: "Integrate compliance checklist systems and automated safety gates in regional hubs.",
                     methodology: "Hybrid",
                     status: "Proposed",
+                    startDate: "2024-07-01",
+                    endDate: "2024-12-31",
                     expectedValue: 40,
                     executionRisk: 20,
                     financials: {
@@ -177,6 +186,10 @@ class DeliveryProStore {
                     title: "Decarbonize Pacific Fruit Packaging",
                     sponsor: "Marcus Aurelius",
                     description: "Replace all single-use plastic shipping shells with biodegradable bamboo fiber packaging. This shifts warehouse processes and eliminates environmental packaging waste.",
+                    startDate: "2024-06-01",
+                    endDate: "2024-09-30",
+                    capEx: 85000,
+                    opEx: 8000,
                     cost: 85000,
                     effort: 4, // months
                     status: "Vetting",
@@ -188,7 +201,11 @@ class DeliveryProStore {
                     id: "intake-crop-predict",
                     title: "Predictive Crop-Yield Deep Learning",
                     sponsor: "Sarah Connor",
-                    description: "Develop agricultural satellite ML analysis pipelines to predict harvest yields, allowing sales teams to optimize export pricing agreements in advance.",
+                    description: "Develop agricultural satellite ML analysis pipelines to predict harvest yields, allowing sales teams to optimise export pricing agreements in advance.",
+                    startDate: "2024-09-01",
+                    endDate: "2025-04-30",
+                    capEx: 160000,
+                    opEx: 25000,
                     cost: 160000,
                     effort: 8,
                     status: "Draft",
@@ -201,6 +218,10 @@ class DeliveryProStore {
                     title: "Pacific Shipping Port Automated Docks",
                     sponsor: "John Doe",
                     description: "Install robotic loading cranes in the main Pacific port shipping hub, decreasing bulk freight ship turnaround time.",
+                    startDate: "2025-01-01",
+                    endDate: "2026-06-30",
+                    capEx: 950000,
+                    opEx: 120000,
                     cost: 950000,
                     effort: 18,
                     status: "Under Review",
@@ -243,8 +264,7 @@ class DeliveryProStore {
                 // Ensure all vital arrays and scenario properties are present before restoring
                 if (parsed && 
                     parsed.strategy && 
-                    parsed.strategy.title &&
-                    parsed.strategy.objectives && 
+                    Array.isArray(parsed.strategy) &&
                     parsed.benefits && 
                     parsed.scopes && 
                     parsed.tasks && 
@@ -392,43 +412,48 @@ class DeliveryProStore {
         });
 
         // 4. Recalculate OKRs metrics by aggregating aligned Benefits
-        s.strategy.objectives.forEach(okr => {
-            const alignedBenefits = s.benefits.filter(b => b.alignedOkrId === okr.id);
-            if (alignedBenefits.length === 0) {
-                okr.current = 0;
-                return;
-            }
-
-            let totalStrategicPull = 0;
-            alignedBenefits.forEach(benefit => {
-                const b = benefit.metric.baseline;
-                const t = benefit.metric.target;
-                const c = benefit.metric.current;
-                
-                let percentAchieved = 0;
-                if (t !== b) {
-                    percentAchieved = (c - b) / (t - b);
+        s.strategy.forEach(strat => {
+            if (!strat.objectives) strat.objectives = [];
+            strat.objectives.forEach(okr => {
+                const alignedBenefits = s.benefits.filter(b => b.alignedOkrId === okr.id);
+                if (alignedBenefits.length === 0) {
+                    okr.current = 0;
+                    return;
                 }
 
-                if (benefit.isDisbenefit) {
-                    // Disbenefits drag down the corresponding objective index
-                    totalStrategicPull -= percentAchieved * 0.3; // Subtracts strategic alignment
-                } else {
-                    totalStrategicPull += percentAchieved;
-                }
+                let totalStrategicPull = 0;
+                alignedBenefits.forEach(benefit => {
+                    const b = benefit.metric.baseline;
+                    const t = benefit.metric.target;
+                    const c = benefit.metric.current;
+                    
+                    let percentAchieved = 0;
+                    if (t !== b) {
+                        percentAchieved = (c - b) / (t - b);
+                    }
+
+                    if (benefit.isDisbenefit) {
+                        // Disbenefits drag down the corresponding objective index
+                        totalStrategicPull -= percentAchieved * 0.3; // Subtracts strategic alignment
+                    } else {
+                        totalStrategicPull += percentAchieved;
+                    }
+                });
+
+                // Convert to aggregate percentage
+                const netAchievement = Math.max(0, Math.min(totalStrategicPull / alignedBenefits.filter(b => !b.isDisbenefit).length, 1.0));
+                okr.current = Math.round(netAchievement * okr.target);
             });
-
-            // Convert to aggregate percentage
-            const netAchievement = Math.max(0, Math.min(totalStrategicPull / alignedBenefits.filter(b => !b.isDisbenefit).length, 1.0));
-            okr.current = Math.round(netAchievement * okr.target);
         });
 
         // 5. Recalculate Enterprise Strategy overall health rating
-        let totalOkrAchievement = 0;
-        s.strategy.objectives.forEach(okr => {
-            totalOkrAchievement += (okr.current / okr.target);
+        s.strategy.forEach(strat => {
+            let totalOkrAchievement = 0;
+            strat.objectives.forEach(okr => {
+                totalOkrAchievement += (okr.current / okr.target);
+            });
+            strat.health = strat.objectives.length > 0 ? Math.round((totalOkrAchievement / strat.objectives.length) * 100) : 0;
         });
-        s.strategy.health = Math.round((totalOkrAchievement / s.strategy.objectives.length) * 100);
 
         if (notify) {
             this.notifySubscribers();

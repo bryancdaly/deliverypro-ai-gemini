@@ -218,14 +218,12 @@ class DeliveryProApp {
         // Custom router logic for the non-component Synthesizer view
         if (this.activeView === "synthesizer") {
             this.renderExecutiveSynthesizer(state, workspaceBody);
-            this.prependScopeBanner(state, workspaceBody);
             return;
         }
 
         const component = this.views[this.activeView];
         if (component) {
             component.render(state);
-            this.prependScopeBanner(state, workspaceBody);
         }
     }
 
@@ -348,87 +346,6 @@ class DeliveryProApp {
         });
     }
 
-    prependScopeBanner(state, container) {
-        // Remove existing scope banners
-        const oldBanners = container.querySelectorAll(".scope-banner");
-        oldBanners.forEach(b => b.remove());
-
-        const activeLevel = state.scenario.activeHierarchyLevel || "enterprise";
-        const view = this.activeView;
-
-        const bannerDetails = {
-            strategy: {
-                enterprise: { icon: "business", title: "Enterprise Strategy Board", desc: "Enterprise Strategy Cascades. Showing all objectives and OKRs aligned to Global Corp enterprise vision." },
-                portfolio: { icon: "donut_large", title: "Portfolio Strategy Board", desc: "Sustainable Agriculture Portfolio. Displays aligned OKRs and benefits maturation tracks for this portfolio." },
-                program: { icon: "account_tree", title: "Program Strategy Board", desc: "Logistics & Fleet Modernization Program. Showing outcomes and projects under this program's boundaries." },
-                project: { icon: "article", title: "Project Strategic Line-of-Sight", desc: "Route-Optimization AI Integration Project. Zooms in on this specific scope and its strategic benefits paths." }
-            },
-            intake: {
-                enterprise: { icon: "business", title: "Enterprise Demand Funnel", desc: "Global Demand Funnel. Capturing all incoming proposals across all business units." },
-                portfolio: { icon: "donut_large", title: "Portfolio Demand Intake Vetting", desc: "Portfolio Demand Intake Vetting. Vetting crop yield and packaging proposals against portfolio budgets." },
-                program: { icon: "account_tree", title: "Program Proposals Sandbox", desc: "Program-Relevant Demand Proposals. Reviewing logistics proposals aligned to program outcomes." },
-                project: { icon: "article", title: "Project Scope Vetting", desc: "Project Scope Vetting. Scoping proposed deliverables, estimates, and tasks before active sprint launch." }
-            },
-            optimizer: {
-                enterprise: { icon: "business", title: "Strategic Enterprise Optimization", desc: "Overall portfolios knapsack optimization sandboxes under corporate limits." },
-                portfolio: { icon: "donut_large", title: "Portfolio Budget & FTE Sandbox", desc: "Portfolio Budget & FTE Sandbox. Running Efficient Frontier value-optimizations under a $1.0M cap." },
-                program: { icon: "account_tree", title: "Program Capacity Sandbox", desc: "Program Capacity Sandbox. Slide budget and FTE bounds under a strict $500k Program Cap." },
-                project: { icon: "article", title: "Project Sandbox Bounds", desc: "Project Sandbox bounds. Analyzing expected project ROI value vs risk points under a $250k Cap." }
-            },
-            finance: {
-                enterprise: { icon: "business", title: "Corporate Capex & Opex Ledger", desc: "Corporate Capex & Opex. Comprehensive financial forecast aggregated across all portfolios." },
-                portfolio: { icon: "donut_large", title: "Portfolio Spend Burndowns", desc: "Portfolio Spend Burndowns. Planned vs actual spend and value realizations for Sustainable Agriculture." },
-                program: { icon: "account_tree", title: "Program Cost Sheet Burndowns", desc: "Program Cost Sheet burndowns. Granular actual spend ledgers for Logistics and Fleet vehicle projects." },
-                project: { icon: "article", title: "Project Actual Costs vs ETC", desc: "Project Actual Costs vs ETC. Granular task-level CapEx and OpEx spend rolled up for the AI routing project." }
-            },
-            kanban: {
-                enterprise: { icon: "business", title: "Enterprise Activity Flow", desc: "Enterprise Activity Flow. Monitor active sprint task streams across the entire corporation." },
-                portfolio: { icon: "donut_large", title: "Portfolio Delivery Flow", desc: "Portfolio Delivery Flow. Tasks and sprints tracking for all projects under the active portfolio." },
-                program: { icon: "account_tree", title: "Program Kanban Workspace", desc: "Program Kanban Workspace. Active sprint backlogs filtered for Logistics and Fleet procurement projects." },
-                project: { icon: "article", title: "Project Sprint Kanban Board", desc: "Project Sprint Kanban Board. Sprints task board for Route-Optimization AI Integration developers." }
-            },
-            gantt: {
-                enterprise: { icon: "business", title: "Corporate Milestones Gantt", desc: "Corporate Milestones. Tracking strategic high-level go-live paths for all organizational portfolios." },
-                portfolio: { icon: "donut_large", title: "Portfolio Delivery Timelines", desc: "Portfolio Delivery Timelines. Tracking Gantt dates and delay-multiplier offsets for active portfolio projects." },
-                program: { icon: "account_tree", title: "Program Gantt Timelines", desc: "Program Gantt Timelines. Tracking critical paths and schedule cascade shift bottlenecks for program delivery." },
-                project: { icon: "article", title: "Project Zoom Gantt Timeline", desc: "Project Zoom Gantt. zoomed task-level Gantt tracking critical path schedules and task milestones." }
-            },
-            resources: {
-                enterprise: { icon: "business", title: "Enterprise Capacity Ledger", desc: "Enterprise Capacity Ledger. Aggregated staff headcount utilization across all business streams." },
-                portfolio: { icon: "donut_large", title: "Portfolio Resource Balancing", desc: "Portfolio Resource Balancing. Reviewing staff bandwidth allocated specifically to portfolio deliverables." },
-                program: { icon: "account_tree", title: "Program FTE Workload Balancing", desc: "Program FTE Workload balancing. Balancing developer capacity and resource loading across program projects." },
-                project: { icon: "article", title: "Project Allocation Matrices", desc: "Project Allocation matrices. granular FTE workload assignments for Route-Optimization team members." }
-            },
-            synthesizer: {
-                enterprise: { icon: "business", title: "Enterprise Executive Presentation brief", desc: "Enterprise Executive Presentation brief. Boardroom slides ready for A4 PDF export." },
-                portfolio: { icon: "donut_large", title: "Portfolio Executive summaries", desc: "Portfolio Executive performance summaries. Aggregated performance metrics for this portfolio." },
-                program: { icon: "account_tree", title: "Program Performance briefings", desc: "Program Performance briefs. Value summaries and milestone completions for the Logistics program." },
-                project: { icon: "article", title: "Project Performance briefings", desc: "Project Performance briefings. Detailed narrative and progress metrics for the AI Route-Optimization scope." }
-            },
-            audit: {
-                enterprise: { icon: "business", title: "Global Governance Audit Log", desc: "Global Governance Audit. Master transactional history ledgers across all organizational adjustments." },
-                portfolio: { icon: "donut_large", title: "Portfolio Audit logs", desc: "Portfolio Audit logs. Audits and rollbacks specific to the Sustainable Agriculture portfolio." },
-                program: { icon: "account_tree", title: "Program Audit transaction logs", desc: "Program Audit transaction logs. Transactional logs filtered for Logistics and Fleet modifications." },
-                project: { icon: "article", title: "Project Transaction Rollbacks", desc: "Project Transaction Rollbacks. Zoomed log of edits and task completions supporting instant rollbacks." }
-            }
-        };
-
-        const details = bannerDetails[view] ? bannerDetails[view][activeLevel] : null;
-        if (!details) return;
-
-        const bannerDiv = document.createElement("div");
-        bannerDiv.className = "scope-banner";
-        bannerDiv.innerHTML = `
-            <span class="material-symbols-outlined scope-banner-icon">${details.icon}</span>
-            <div class="scope-banner-text">
-                <h4>${details.title}</h4>
-                <p>${details.desc}</p>
-            </div>
-        `;
-        
-        container.insertBefore(bannerDiv, container.firstChild);
-    }
-
     // ==========================================================================
     // EXECUTIVE SYNTHESIZER & BRIEF EXPORTER VIEW
     // ==========================================================================
@@ -439,11 +356,7 @@ class DeliveryProApp {
         
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px; margin: 0 auto; padding-top: 10px;">
-                <div class="glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h3>Executive Strategic Handout Summary</h3>
-                        <p class="help-text" style="margin-top: 4px;">Aggregated corporate brief for senior executives and Pacific board meetings.</p>
-                    </div>
+                <div class="glass-panel" style="display:flex; justify-content:flex-end; align-items:center;">
                     <button id="export-brief-pdf-btn" class="btn btn-primary">
                         <span class="material-symbols-outlined">print</span>
                         <span>Export Presentation Brief (PDF)</span>
@@ -460,12 +373,12 @@ class DeliveryProApp {
                     <div class="est-details-grid" style="grid-template-columns:1fr 1fr 1fr; gap:20px;">
                         <div class="cons-card">
                             <span class="cons-card-lbl">Global Strategy Health</span>
-                            <div class="cons-card-val" style="color: var(--color-success); font-size:24px; margin-top:8px;">${state.strategy.health}%</div>
-                            <p class="help-text" style="margin-top:4px;">Cascade indicators verified across 2 target OKRs.</p>
+                            <div class="cons-card-val" style="color: var(--color-success); font-size:24px; margin-top:8px;">${Math.round(state.strategy.reduce((acc, s) => acc + s.health, 0) / Math.max(state.strategy.length, 1))}%</div>
+                            <p class="help-text" style="margin-top:4px;">Cascade indicators verified across ${state.strategy.flatMap(s=>s.objectives).length} target OKRs.</p>
                         </div>
                         <div class="cons-card">
                             <span class="cons-card-lbl">Cumulative Financials Burndown</span>
-                            <div class="cons-card-val" style="color: var(--accent-indigo); font-size:24px; margin-top:8px;">$${totalSpend.toLocaleString()} / $${totalBudget.toLocaleString()}</div>
+                            <div class="cons-card-val" style="color: var(--accent-indigo); font-size:24px; margin-top:8px;">NZ$${totalSpend.toLocaleString()} / NZ$${totalBudget.toLocaleString()}</div>
                             <p class="help-text" style="margin-top:4px;">YTD Burn-rate: ${Math.round((totalSpend / totalBudget) * 100)}% CapEx limit.</p>
                         </div>
                         <div class="cons-card">
@@ -481,7 +394,7 @@ class DeliveryProApp {
                     <div style="border-top:1px solid var(--glass-border); padding-top:16px;">
                         <h5 style="text-transform:uppercase; font-size:11px; color:var(--color-text-secondary); margin-bottom:12px;">Cascading Strategic OKRs Achievements</h5>
                         <div class="strategy-list" style="max-height:none; display:flex; flex-direction:column; gap:12px;">
-                            ${state.strategy.objectives.map(o => `
+                            ${state.strategy.flatMap(s=>s.objectives).map(o => `
                                 <div class="ledger-item" style="padding:16px;">
                                     <div style="width:60%">
                                         <b style="font-size:13px;">${o.title}</b>

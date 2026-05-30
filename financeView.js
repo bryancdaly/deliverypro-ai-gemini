@@ -63,18 +63,18 @@ class FinanceView {
                 <div class="finance-metrics-row">
                     <div class="glass-panel cons-card">
                         <span class="cons-card-lbl">Total Planned Budget</span>
-                        <div class="cons-card-val" style="color: var(--color-text-primary)">$${totalBudget.toLocaleString()} USD</div>
-                        <p class="help-text" style="margin-top: 4px;">CapEx: $${totalCapExPlan.toLocaleString()} | OpEx: $${totalOpExPlan.toLocaleString()}</p>
+                        <div class="cons-card-val" style="color: var(--color-text-primary)">NZ$${totalBudget.toLocaleString()}</div>
+                        <p class="help-text" style="margin-top: 4px;">CapEx: NZ$${totalCapExPlan.toLocaleString()} | OpEx: NZ$${totalOpExPlan.toLocaleString()}</p>
                     </div>
                     <div class="glass-panel cons-card">
                         <span class="cons-card-lbl">Actual Spend (YTD)</span>
-                        <div class="cons-card-val" style="color: var(--color-success)">$${totalActual.toLocaleString()} USD</div>
+                        <div class="cons-card-val" style="color: var(--color-success)">NZ$${totalActual.toLocaleString()}</div>
                         <p class="help-text" style="margin-top: 4px;">Budget Burn-rate: ${totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0}% consumed</p>
                     </div>
                     <div class="glass-panel cons-card">
                         <span class="cons-card-lbl">Forecast-At-Completion (FAC)</span>
-                        <div class="cons-card-val" style="color: var(--accent-indigo)">$${totalForecast.toLocaleString()} USD</div>
-                        <p class="help-text" style="margin-top: 4px;">ETC: $${(totalCapExEtc + totalOpExEtc).toLocaleString()} | Variance: $${(totalBudget - totalForecast).toLocaleString()} ${totalBudget - totalForecast >= 0 ? 'Under' : 'Over'}</p>
+                        <div class="cons-card-val" style="color: var(--accent-indigo)">NZ$${totalForecast.toLocaleString()}</div>
+                        <p class="help-text" style="margin-top: 4px;">ETC: NZ$${(totalCapExEtc + totalOpExEtc).toLocaleString()} | Variance: NZ$${(totalBudget - totalForecast).toLocaleString()} ${totalBudget - totalForecast >= 0 ? 'Under' : 'Over'}</p>
                     </div>
                 </div>
 
@@ -92,11 +92,11 @@ class FinanceView {
                                     <div class="ledger-item">
                                         <div class="cost-lbl">
                                             <b>${s.name}</b>
-                                            <small>Status: ${s.status} | Plan: $${s.financials.capEx.plan.toLocaleString()}</small>
+                                            <small>Status: ${s.status} | Plan: NZ$${s.financials.capEx.plan.toLocaleString()}</small>
                                         </div>
                                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                                            <span class="cost-val" style="color: var(--color-success)">Actual: $${s.financials.capEx.actual.toLocaleString()}</span>
-                                            <span class="cost-val" style="font-size:10px; color: var(--color-text-muted)">ETC: $${s.financials.capEx.etc.toLocaleString()}</span>
+                                            <span class="cost-val" style="color: var(--color-success)">Actual: NZ$${s.financials.capEx.actual.toLocaleString()}</span>
+                                            <span class="cost-val" style="font-size:10px; color: var(--color-text-muted)">ETC: NZ$${s.financials.capEx.etc.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 `;
@@ -116,11 +116,11 @@ class FinanceView {
                                     <div class="ledger-item">
                                         <div class="cost-lbl">
                                             <b>${s.name}</b>
-                                            <small>Status: ${s.status} | Plan: $${s.financials.opEx.plan.toLocaleString()}</small>
+                                            <small>Status: ${s.status} | Plan: NZ$${s.financials.opEx.plan.toLocaleString()}</small>
                                         </div>
                                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                                            <span class="cost-val" style="color: var(--color-success)">Actual: $${s.financials.opEx.actual.toLocaleString()}</span>
-                                            <span class="cost-val" style="font-size:10px; color: var(--color-text-muted)">ETC: $${s.financials.opEx.etc.toLocaleString()}</span>
+                                            <span class="cost-val" style="color: var(--color-success)">Actual: NZ$${s.financials.opEx.actual.toLocaleString()}</span>
+                                            <span class="cost-val" style="font-size:10px; color: var(--color-text-muted)">ETC: NZ$${s.financials.opEx.etc.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 `;

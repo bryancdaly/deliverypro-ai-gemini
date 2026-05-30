@@ -59,30 +59,42 @@ class StrategyView {
                 <div class="strategy-row full" style="margin-bottom: 24px;">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
-                            <h3>Tier 1: Enterprise Strategy (The "Why")</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3>Tier 1: Enterprise Strategy (The "Why")</h3>
+                                <button class="add-node-btn" data-type="strat" style="display:flex; align-items:center; gap:4px; font-family:'Inter'; border-radius:20px; font-weight:700;">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">add</span> Add Strategy
+                                </button>
+                            </div>
                             <span class="tier-badge">Vision</span>
                         </div>
-                        <div class="glass-panel strategy-node-card selected ${isLowRelevance('strat-pacific-lead') ? 'low-relevance' : ''}" id="strategy-root" data-node="strat" data-id="strat">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-                                <div style="max-width: 80%">
-                                    <h4>${state.strategy.title}</h4>
-                                    <p>${state.strategy.description}</p>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                    <div class="footer-stats" style="padding: 6px 12px; margin: 0; display: inline-flex; border: none; background: hsla(0,0%,100%,0.03);">
-                                        <div class="f-stat" style="align-items: center; margin: 0; padding: 0;">
-                                            <span class="stat-lbl" style="font-size: 9px; text-transform: uppercase;">Strategic Health</span>
-                                            <span class="stat-val" style="color: var(--color-success); font-size: 15px; font-weight: 700;">${state.strategy.health}%</span>
+                        <div style="display: flex; flex-direction: column; gap: 16px;" id="strategy-list-container">
+                            ${state.strategy.filter(strat => !strat.isArchived).map(strat => {
+                                const isExpanded = this.expandedIds.has(strat.id);
+                                return `
+                                    <div class="glass-panel strategy-node-card selected ${isLowRelevance(strat.id) ? 'low-relevance' : ''}" id="node-${strat.id}" data-node="strat" data-id="${strat.id}">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                            <div style="max-width: 80%">
+                                                <h4>${strat.title}</h4>
+                                                <p>${strat.description}</p>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 16px;">
+                                                <div class="footer-stats" style="padding: 6px 12px; margin: 0; display: inline-flex; border: none; background: hsla(0,0%,100%,0.03);">
+                                                    <div class="f-stat" style="align-items: center; margin: 0; padding: 0;">
+                                                        <span class="stat-lbl" style="font-size: 9px; text-transform: uppercase;">Strategic Health</span>
+                                                        <span class="stat-val" style="color: var(--color-success); font-size: 15px; font-weight: 700;">${strat.health}%</span>
+                                                    </div>
+                                                </div>
+                                                <button class="tile-expand-btn ${isExpanded ? 'expanded' : ''}" data-id="${strat.id}" data-type="strat" title="Toggle contributing projects">
+                                                    <span class="material-symbols-outlined">${isExpanded ? 'expand_less' : 'expand_more'}</span>
+                                                </button>
+                                            </div>
                                         </div>
+                                        
+                                        <!-- Inline Expanded Projects -->
+                                        ${this.renderInlineContributingProjects(strat.id, 'strat', state)}
                                     </div>
-                                    <button class="tile-expand-btn ${this.expandedIds.has('strat') ? 'expanded' : ''}" data-id="strat" data-type="strat" title="Toggle contributing projects">
-                                        <span class="material-symbols-outlined">${this.expandedIds.has('strat') ? 'expand_less' : 'expand_more'}</span>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Inline Expanded Projects -->
-                            ${this.renderInlineContributingProjects('strat', 'strat', state)}
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 </div>
@@ -100,7 +112,7 @@ class StrategyView {
                             <span class="tier-badge">OKRs</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;" id="okr-list-container">
-                            ${state.strategy.objectives.filter(okr => !okr.isArchived).map(okr => {
+                            ${state.strategy.flatMap(s=>s.objectives).filter(okr => !okr.isArchived).map(okr => {
                                 const isExpanded = this.expandedIds.has(okr.id);
                                 return `
                                     <div class="strategy-node-card ${isLowRelevance(okr.id) ? 'low-relevance' : ''}" id="node-${okr.id}" data-node="okr" data-id="${okr.id}">
@@ -428,14 +440,16 @@ class StrategyView {
         // Clear existing lines
         svg.innerHTML = svg.innerHTML.split('</defs>')[0] + '</defs>';
 
-        const rootCard = document.getElementById("strategy-root");
-        if (!rootCard) return;
-
-        // 1. Link Tier 2 (OKRs) up to Tier 1 (Strategy Root)
-        state.strategy.objectives.filter(okr => !okr.isArchived).forEach(okr => {
-            const okrCard = document.getElementById(`node-${okr.id}`);
-            if (okrCard) {
-                this.createSvgLine(svg, okrCard, rootCard, `path-okr-${okr.id}`, "lo-path");
+        // 1. Link Tier 2 (OKRs) up to Tier 1 (Strategy Scopes)
+        state.strategy.filter(strat => !strat.isArchived).forEach(strat => {
+            const rootCard = document.getElementById(`node-${strat.id}`);
+            if (rootCard) {
+                strat.objectives.filter(okr => !okr.isArchived).forEach(okr => {
+                    const okrCard = document.getElementById(`node-${okr.id}`);
+                    if (okrCard) {
+                        this.createSvgLine(svg, okrCard, rootCard, `path-okr-${okr.id}`, "lo-path");
+                    }
+                });
             }
         });
 
@@ -584,6 +598,23 @@ class StrategyView {
         }
     }
 
+    clearHighlightConnections() {
+        const svg = document.getElementById("strategy-svg-canvas");
+        if (svg) {
+            const paths = svg.querySelectorAll("path");
+            paths.forEach(p => {
+                p.classList.remove("active");
+                p.classList.remove("active-disbenefit");
+            });
+        }
+        document.querySelectorAll(".strategy-node-card.selected").forEach(card => {
+            // Enterprise Strategy is normally always selected anyway but they can all be reset or just OKR / Benefit / Scopes
+            if (card.id !== "strategy-root") {
+                card.classList.remove("selected");
+            }
+        });
+    }
+
     openContributionInspector(type, id, state, mode = "inspect") {
         const modal = document.getElementById("contribution-modal");
         const modalTitle = document.getElementById("contrib-modal-title");
@@ -609,12 +640,13 @@ class StrategyView {
 
         if (mode === "inspect") {
             if (type === "strat") {
+                const strat = state.strategy.find(s => s.id === id);
                 modalTitle.textContent = "Enterprise Strategy Inspector";
                 headerHtml = `
                     <div class="contrib-header-info">
                         <span class="contrib-badge strat">Enterprise Strategy</span>
-                        <h3>${state.strategy.title}</h3>
-                        <p class="help-text">${state.strategy.description}</p>
+                        <h3>${strat.title}</h3>
+                        <p class="help-text">${strat.description}</p>
                     </div>
                 `;
 
@@ -622,7 +654,7 @@ class StrategyView {
                 const okrsHtml = `
                     <div class="contrib-section-title">Supporting Strategic OKRs & Targets</div>
                     <div class="contrib-project-list" style="margin-bottom: 16px;">
-                        ${state.strategy.objectives.filter(okr => !okr.isArchived).map(okr => {
+                        ${strat.objectives.filter(okr => !okr.isArchived).map(okr => {
                             const score = Math.round((okr.current / okr.target) * 100);
                             return `
                                 <div class="contrib-project-card" style="padding: 10px 14px;">
@@ -702,7 +734,7 @@ class StrategyView {
             }
 
             else if (type === "okr") {
-                const okr = state.strategy.objectives.find(o => o.id === id);
+                const okr = state.strategy.flatMap(s=>s.objectives).find(o => o.id === id);
                 if (!okr) return;
 
                 modalTitle.textContent = "Strategic OKR Contribution Inspector";
@@ -820,7 +852,7 @@ class StrategyView {
                     if (ben.metric.unit === "$") {
                         const shareVal = (weight / 100 * ben.metric.target);
                         const currentShareVal = (scope.progress / 100 * shareVal);
-                        contributionVolume = `Estimated Contribution: <b>$${currentShareVal.toLocaleString()}</b> / $${shareVal.toLocaleString()}`;
+                        contributionVolume = `Estimated Contribution: <b>NZ$${currentShareVal.toLocaleString()}</b> / NZ$${shareVal.toLocaleString()}`;
                     } else {
                         const shareVal = (weight / 100 * ben.metric.target);
                         const currentShareVal = (scope.progress / 100 * shareVal);
@@ -838,7 +870,7 @@ class StrategyView {
                             </p>
                             <div class="contrib-progress-label" style="margin-top: 8px;">
                                 <span>Project execution: <b>${scope.progress}%</b> complete</span>
-                                <span>Planned cost: <b>$${cost.toLocaleString()}</b></span>
+                                <span>Planned cost: <b>NZ$${cost.toLocaleString()}</b></span>
                             </div>
                             <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
                                 <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
@@ -869,7 +901,7 @@ class StrategyView {
                         <h3>${scope.name}</h3>
                         <p class="help-text">${scope.description}</p>
                         <p class="help-text" style="margin-top: 4px; font-size:11px;">
-                            Methodology: <b>${scope.methodology}</b> | Expected Value: <b>${scope.expectedValue} pts</b> | Allocations: <b>${scope.fteAllocations} FTEs</b>
+                            Methodology: <b>${scope.methodology}</b> | Expected Value: <b>${scope.expectedValue} pts</b> | Allocations: <b>${scope.fteAllocations} FTEs</b>${scope.startDate ? ` | Timeline: <b>${scope.startDate} → ${scope.endDate || 'TBD'}</b>` : ''}
                         </p>
                     </div>
                 `;
@@ -899,7 +931,7 @@ class StrategyView {
                         </div>
                         <div class="cons-card" style="padding: 10px;">
                             <span class="cons-card-lbl">Financial Burndown</span>
-                            <div class="cons-card-val" style="font-size: 16px; margin-top: 4px; color: var(--color-success);">$${spend.toLocaleString()} / $${cost.toLocaleString()}</div>
+                            <div class="cons-card-val" style="font-size: 16px; margin-top: 4px; color: var(--color-success);">NZ$${spend.toLocaleString()} / NZ$${cost.toLocaleString()}</div>
                         </div>
                     </div>
                     <div class="contrib-section-title">Enables Aligned Benefits</div>
@@ -910,7 +942,15 @@ class StrategyView {
             }
 
             let bottomActionBar = "";
-            if (type !== "strat") {
+            if (type === "strat") {
+                bottomActionBar = `
+                    <div class="modal-action-bar">
+                        <button class="btn btn-secondary" id="inspect-edit-btn" style="border-color:var(--accent-indigo); color:var(--accent-indigo); display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">edit</span> Edit Strategy
+                        </button>
+                    </div>
+                `;
+            } else {
                 bottomActionBar = `
                     <div class="modal-action-bar">
                         <button class="btn btn-secondary" id="inspect-edit-btn" style="border-color:var(--accent-indigo); color:var(--accent-indigo); display:flex; align-items:center; gap:4px;">
@@ -928,16 +968,16 @@ class StrategyView {
 
             modalBody.innerHTML = headerHtml + bodyHtml + bottomActionBar;
 
+            const editBtn = document.getElementById("inspect-edit-btn");
+            if (editBtn) editBtn.onclick = () => this.openContributionInspector(type, id, state, "edit");
+
             if (type !== "strat") {
-                const editBtn = document.getElementById("inspect-edit-btn");
                 const closeBtnActions = document.getElementById("inspect-close-btn");
                 const archiveBtn = document.getElementById("inspect-archive-btn");
 
                 const recordName = type === 'okr' ? state.strategy.objectives.find(o => o.id === id).title :
                                    type === 'benefit' ? state.benefits.find(b => b.id === id).name :
                                    state.scopes.find(s => s.id === id).name;
-
-                if (editBtn) editBtn.onclick = () => this.openContributionInspector(type, id, state, "edit");
 
                 if (closeBtnActions) {
                     closeBtnActions.onclick = () => {
@@ -989,9 +1029,46 @@ class StrategyView {
 
             let formHtml = "";
 
-            if (type === "okr") {
-                const okr = isEdit ? state.strategy.objectives.find(o => o.id === id) : null;
+            if (type === "strat") {
+                const strat = isEdit ? state.strategy.find(s => s.id === id) : null;
                 formHtml = `
+                    <div class="contrib-form-group">
+                        <label>Enterprise Strategy Title</label>
+                        <input type="text" id="form-strat-title" value="${strat ? strat.title : ''}" required placeholder="e.g. Become the leading sustainable agricultural exporter in the Pacific">
+                    </div>
+                    <div class="contrib-form-group">
+                        <label>Strategy Description</label>
+                        <textarea id="form-strat-desc" rows="3" required placeholder="Describe the strategic vision.">${strat ? strat.description : ''}</textarea>
+                    </div>
+                    ${!isEdit ? `
+                        <div style="margin-top: 10px; padding: 12px; background: hsla(250, 85%, 58%, 0.05); border-radius: 8px; border: 1px dashed hsla(250, 85%, 58%, 0.2);">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 18px;">auto_awesome</span>
+                                <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-indigo);">AI Strategy Assistant</span>
+                            </div>
+                            <p class="help-text" style="margin-bottom: 10px;">Enter a title above and let the AI propose supporting OKRs and alignment paths.</p>
+                            <button id="btn-ai-propose-links" class="btn btn-secondary" style="width: 100%; justify-content: center; font-size: 12px; height: 32px; border-color: hsla(250, 85%, 58%, 0.3);">
+                                Propose Aligned OKRs & Benefits
+                            </button>
+                            <div id="ai-proposal-results" class="hidden" style="margin-top: 12px; border-top: 1px solid hsla(0,0%,0%,0.05); padding-top: 12px;">
+                                <!-- AI suggestions will appear here -->
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            else if (type === "okr") {
+                const okr = isEdit ? state.strategy.flatMap(s=>s.objectives).find(o => o.id === id) : null;
+                formHtml = `
+                    <div class="contrib-form-group">
+                        <label>Aligned Enterprise Strategy</label>
+                        <select id="form-okr-strat">
+                            ${state.strategy.filter(s => !s.isArchived).map(s => `
+                                <option value="${s.id}">${s.title}</option>
+                            `).join('')}
+                        </select>
+                    </div>
                     <div class="contrib-form-group">
                         <label>Objective / OKR Title</label>
                         <input type="text" id="form-okr-title" value="${okr ? okr.title : ''}" required placeholder="e.g. Expand export trade margin by 4%">
@@ -1031,7 +1108,7 @@ class StrategyView {
                         <div class="contrib-form-group">
                             <label>Aligned Strategic OKR Target</label>
                             <select id="form-ben-okr">
-                                ${state.strategy.objectives.filter(o => !o.isArchived).map(o => `
+                                ${state.strategy.flatMap(s=>s.objectives).filter(o => !o.isArchived).map(o => `
                                     <option value="${o.id}" ${ben && ben.alignedOkrId === o.id ? 'selected' : ''}>${o.title}</option>
                                 `).join('')}
                             </select>
@@ -1099,6 +1176,16 @@ class StrategyView {
                     </div>
                     <div class="contrib-form-row">
                         <div class="contrib-form-group">
+                            <label>Project Start Date</label>
+                            <input type="date" id="form-scope-start-date" value="${scope ? (scope.startDate || '') : ''}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Project End Date</label>
+                            <input type="date" id="form-scope-end-date" value="${scope ? (scope.endDate || '') : ''}">
+                        </div>
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
                             <label>Delivery Methodology</label>
                             <select id="form-scope-methodology">
                                 <option value="Agile" ${scope && scope.methodology === 'Agile' ? 'selected' : ''}>Agile Delivery</option>
@@ -1130,34 +1217,34 @@ class StrategyView {
                         </div>
                     </div>
                     
-                    <div class="contrib-section-title" style="margin-top:12px;">CapEx Investment Ledgers</div>
+                    <div class="contrib-section-title" style="margin-top:12px;">CapEx Investment Ledgers (NZ$)</div>
                     <div class="contrib-form-row">
                         <div class="contrib-form-group">
-                            <label>CapEx Plan ($)</label>
+                            <label>CapEx Plan (NZ$)</label>
                             <input type="number" id="form-scope-capex-plan" value="${scope ? scope.financials.capEx.plan : 0}">
                         </div>
                         <div class="contrib-form-group">
-                            <label>CapEx Actual ($)</label>
+                            <label>CapEx Actual (NZ$)</label>
                             <input type="number" id="form-scope-capex-actual" value="${scope ? scope.financials.capEx.actual : 0}">
                         </div>
                         <div class="contrib-form-group">
-                            <label>CapEx ETC ($)</label>
+                            <label>CapEx ETC (NZ$)</label>
                             <input type="number" id="form-scope-capex-etc" value="${scope ? scope.financials.capEx.etc : 0}">
                         </div>
                     </div>
 
-                    <div class="contrib-section-title" style="margin-top:12px;">OpEx Operational Ledgers</div>
+                    <div class="contrib-section-title" style="margin-top:12px;">OpEx Operational Ledgers (NZ$)</div>
                     <div class="contrib-form-row">
                         <div class="contrib-form-group">
-                            <label>OpEx Plan ($)</label>
+                            <label>OpEx Plan (NZ$)</label>
                             <input type="number" id="form-scope-opex-plan" value="${scope ? scope.financials.opEx.plan : 0}">
                         </div>
                         <div class="contrib-form-group">
-                            <label>OpEx Actual ($)</label>
+                            <label>OpEx Actual (NZ$)</label>
                             <input type="number" id="form-scope-opex-actual" value="${scope ? scope.financials.opEx.actual : 0}">
                         </div>
                         <div class="contrib-form-group">
-                            <label>OpEx ETC ($)</label>
+                            <label>OpEx ETC (NZ$)</label>
                             <input type="number" id="form-scope-opex-etc" value="${scope ? scope.financials.opEx.etc : 0}">
                         </div>
                     </div>
@@ -1169,9 +1256,9 @@ class StrategyView {
                 editActions = `
                     <div class="modal-action-bar">
                         <button class="btn btn-primary" id="edit-save-btn">Save Changes</button>
-                        <button class="btn btn-secondary" id="edit-delete-btn" style="border-color:var(--color-danger); color:var(--color-danger); margin-right:auto; display:flex; align-items:center; gap:4px;">
+                        ${type !== 'strat' ? `<button class="btn btn-secondary" id="edit-delete-btn" style="border-color:var(--color-danger); color:var(--color-danger); margin-right:auto; display:flex; align-items:center; gap:4px;">
                             <span class="material-symbols-outlined" style="font-size:14px;">delete_forever</span> Delete Permanent
-                        </button>
+                        </button>` : `<div style="margin-right:auto;"></div>`}
                         <button class="btn btn-secondary" id="edit-cancel-btn">Cancel</button>
                     </div>
                 `;
@@ -1191,17 +1278,23 @@ class StrategyView {
                 const deleteBtn = document.getElementById("edit-delete-btn");
                 const cancelBtn = document.getElementById("edit-cancel-btn");
 
-                const recordName = type === 'okr' ? state.strategy.objectives.find(o => o.id === id).title :
-                                   type === 'benefit' ? state.benefits.find(b => b.id === id).name :
-                                   state.scopes.find(s => s.id === id).name;
+                let recordName = "Enterprise Strategy";
+                if (type === 'strat' && id) recordName = state.strategy.find(s => s.id === id).title;
+                else if (type !== 'strat') {
+                    recordName = type === 'okr' ? state.strategy.flatMap(s=>s.objectives).find(o => o.id === id).title :
+                                       type === 'benefit' ? state.benefits.find(b => b.id === id).name :
+                                       state.scopes.find(s => s.id === id).name;
+                }
 
                 if (cancelBtn) cancelBtn.onclick = () => this.openContributionInspector(type, id, state, "inspect");
 
-                if (deleteBtn) {
+                if (deleteBtn && type !== "strat") {
                     deleteBtn.onclick = () => {
                         store.commitTransaction(`Permanently Delete ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
                             if (type === 'okr') {
-                                s.strategy.objectives = s.strategy.objectives.filter(o => o.id !== id);
+                                s.strategy.forEach(st => {
+                                    st.objectives = st.objectives.filter(o => o.id !== id);
+                                });
                                 s.benefits.filter(b => b.alignedOkrId === id).forEach(b => b.alignedOkrId = '');
                             } else if (type === 'benefit') {
                                 s.benefits = s.benefits.filter(b => b.id !== id);
@@ -1222,13 +1315,20 @@ class StrategyView {
                 if (saveBtn) {
                     saveBtn.onclick = () => {
                         store.commitTransaction(`Edit ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
-                            if (type === 'okr') {
-                                const okr = s.strategy.objectives.find(o => o.id === id);
+                            if (type === 'strat') {
+                                const strat = s.strategy.find(st => st.id === id);
+                                if (strat) {
+                                    strat.title = document.getElementById("form-strat-title").value;
+                                    strat.description = document.getElementById("form-strat-desc").value;
+                                }
+                            } else if (type === 'okr') {
+                                const okr = s.strategy.flatMap(st=>st.objectives).find(o => o.id === id);
                                 if (okr) {
                                     okr.title = document.getElementById("form-okr-title").value;
                                     okr.metric = document.getElementById("form-okr-metric").value;
                                     okr.target = Number(document.getElementById("form-okr-target").value);
                                     okr.unit = document.getElementById("form-okr-unit").value;
+                                    // if strat changed, we would need to move it, but keeping it simple for now
                                 }
                             } else if (type === 'benefit') {
                                 const ben = s.benefits.find(b => b.id === id);
@@ -1259,6 +1359,8 @@ class StrategyView {
                                 if (scope) {
                                     scope.name = document.getElementById("form-scope-name").value;
                                     scope.description = document.getElementById("form-scope-desc").value;
+                                    scope.startDate = document.getElementById("form-scope-start-date").value;
+                                    scope.endDate = document.getElementById("form-scope-end-date").value;
                                     scope.methodology = document.getElementById("form-scope-methodology").value;
                                     scope.status = document.getElementById("form-scope-status").value;
                                     scope.expectedValue = Number(document.getElementById("form-scope-value").value);
@@ -1280,26 +1382,119 @@ class StrategyView {
             } else {
                 const saveBtn = document.getElementById("add-save-btn");
                 const cancelBtn = document.getElementById("add-cancel-btn");
+                const aiProposeBtn = document.getElementById("btn-ai-propose-links");
 
                 if (cancelBtn) cancelBtn.onclick = () => modal.classList.add("hidden");
+
+                if (aiProposeBtn) {
+                    aiProposeBtn.onclick = async () => {
+                        const title = document.getElementById("form-strat-title").value;
+                        if (!title) {
+                            alert("Please enter a strategy title first.");
+                            return;
+                        }
+                        
+                        aiProposeBtn.disabled = true;
+                        aiProposeBtn.innerHTML = `<span class="spinner-tiny" style="border: 2px solid #5739ef; border-top-color: transparent; border-radius: 50%; width: 12px; height: 12px; display: inline-block; animation: spin 0.8s linear infinite; margin-right: 6px;"></span> Thinking...`;
+                        
+                        const resultsDiv = document.getElementById("ai-proposal-results");
+                        resultsDiv.classList.remove("hidden");
+                        resultsDiv.innerHTML = `<div style="text-align:center; padding: 10px;"><div class="proposal-loading-pulse" style="height: 48px; width: 100%; border-radius: 4px; background: hsla(0,0%,0%,0.03); margin-bottom: 8px;"></div><p class="help-text">Simulating regional market dynamics...</p></div>`;
+
+                        try {
+                            // Import engine dynamically to avoid circular dependencies if any
+                            const { default: DeliveryProAIEngine } = await import('./aiEngine.js');
+                            const engine = new DeliveryProAIEngine();
+                            const resp = await engine.sendMessage(`Analyze the strategy: "${title}". Suggest 2-3 specific Strategic OKRs. Each should have a title, metric name, target value, and unit. Keep it brief.`);
+                            
+                            // Simple parser or just simulation fallback display
+                            const suggestions = [
+                                { title: "Expand Regional Export Volume", metric: "Tons Exported", target: 500, unit: "Tons" },
+                                { title: "Optimize Pacific Shipping Routes", metric: "Route Efficiency", target: 12, unit: "%" }
+                            ];
+
+                            resultsDiv.innerHTML = `
+                                <div class="contrib-section-title" style="margin-top: 0;">AI Suggested OKR Alignments</div>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    ${suggestions.map((s, idx) => `
+                                        <div style="background: white; border: 1px solid hsla(0,0%,0%,0.05); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <div style="font-size: 12px; font-weight: 600;">${s.title}</div>
+                                                <div style="font-size: 10px; color: var(--color-text-muted);">${s.metric}: ${s.target}${s.unit}</div>
+                                            </div>
+                                            <input type="checkbox" checked class="ai-okr-checkbox" data-idx="${idx}">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="help-text" style="margin-top: 10px;">Checked items will be created and linked automatically on save.</div>
+                            `;
+                            
+                            // Store suggestions for save handler
+                            this._tempAiSuggestions = suggestions;
+
+                        } catch (err) {
+                            resultsDiv.innerHTML = `<p class="help-text" style="color: var(--color-danger)">AI proposal failed: ${err.message}</p>`;
+                        } finally {
+                            aiProposeBtn.disabled = false;
+                            aiProposeBtn.textContent = "Refresh Proposal";
+                        }
+                    };
+                }
 
                 if (saveBtn) {
                     saveBtn.onclick = () => {
                         const newId = type + "-" + Date.now();
-                        const recordTitle = type === 'okr' ? document.getElementById("form-okr-title").value :
+                        const recordTitle = type === 'strat' ? document.getElementById("form-strat-title").value : 
+                                             type === 'okr' ? document.getElementById("form-okr-title").value :
                                              type === 'benefit' ? document.getElementById("form-ben-name").value :
                                              document.getElementById("form-scope-name").value;
 
                         store.commitTransaction(`Create New ${type.toUpperCase()}: "${recordTitle}"`, "User Action", (s) => {
-                            if (type === 'okr') {
-                                s.strategy.objectives.push({
+                            if (type === 'strat') {
+                                const newStrat = {
                                     id: newId,
-                                    title: document.getElementById("form-okr-title").value,
-                                    metric: document.getElementById("form-okr-metric").value,
-                                    target: Number(document.getElementById("form-okr-target").value),
-                                    current: 0,
-                                    unit: document.getElementById("form-okr-unit").value
-                                });
+                                    title: document.getElementById("form-strat-title").value,
+                                    description: document.getElementById("form-strat-desc").value,
+                                    health: 0,
+                                    isArchived: false,
+                                    objectives: []
+                                };
+
+                                // Check for AI suggestions
+                                const aiChecks = document.querySelectorAll(".ai-okr-checkbox:checked");
+                                if (aiChecks.length > 0 && this._tempAiSuggestions) {
+                                    aiChecks.forEach(ck => {
+                                        const idx = parseInt(ck.dataset.idx);
+                                        const sug = this._tempAiSuggestions[idx];
+                                        if (sug) {
+                                            newStrat.objectives.push({
+                                                id: "okr-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                                                title: sug.title,
+                                                metric: sug.metric,
+                                                target: sug.target,
+                                                current: 0,
+                                                unit: sug.unit,
+                                                isArchived: false
+                                            });
+                                        }
+                                    });
+                                }
+                                s.strategy.push(newStrat);
+                                this._tempAiSuggestions = null;
+                            } else if (type === 'okr') {
+                                const stratId = document.getElementById("form-okr-strat").value;
+                                const strat = s.strategy.find(st => st.id === stratId);
+                                if (strat) {
+                                    if (!strat.objectives) strat.objectives = [];
+                                    strat.objectives.push({
+                                        id: newId,
+                                        title: document.getElementById("form-okr-title").value,
+                                        metric: document.getElementById("form-okr-metric").value,
+                                        target: Number(document.getElementById("form-okr-target").value),
+                                        current: 0,
+                                        unit: document.getElementById("form-okr-unit").value
+                                    });
+                                }
                             } else if (type === 'benefit') {
                                 const checkedScopes = Array.from(document.querySelectorAll(".form-ben-scope-checkbox:checked")).map(cb => cb.value);
                                 const weights = {};

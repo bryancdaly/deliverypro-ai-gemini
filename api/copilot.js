@@ -18,8 +18,8 @@ export default async function handler(req, res) {
 Your workspace state is passed below. You must reference actual projects, OKRs, benefits, and costs in your responses.
 
 Current Portfolio State:
-- Enterprise Strategy: "${state.strategy.title}"
-- Active Objectives: ${JSON.stringify(state.strategy.objectives)}
+- Enterprise Strategy: "${state.strategy.map(s => s.title).join(', ')}"
+- Active Objectives: ${JSON.stringify(state.strategy.flatMap(s => s.objectives))}
 - Aligned Benefits: ${JSON.stringify(state.benefits.map(b => ({ id: b.id, name: b.name, current: b.metric.current, target: b.metric.target })))}
 - Project Scopes: ${JSON.stringify(state.scopes.map(s => ({ id: s.id, name: s.name, progress: s.progress, capEx: s.financials.capEx.plan, fte: s.fteAllocations })))}
 - Active Tasks: ${JSON.stringify(state.tasks.map(t => ({ title: t.title, scopeId: t.scopeId, status: t.status, assignee: t.assignee })))}

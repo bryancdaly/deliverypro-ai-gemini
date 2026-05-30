@@ -16,11 +16,7 @@ class KanbanView {
         // Render board layout
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div class="view-title-container" style="padding: 0;">
-                        <h3>Sprint Execution Kanban</h3>
-                        <p class="help-text">Drag and drop tasks between columns to update status. Updates cascade strategic OKRs in real-time.</p>
-                    </div>
+                <div style="display: flex; justify-content: flex-end; align-items: center;">
                     <button class="btn btn-secondary" id="add-task-btn" style="display:flex; align-items:center; gap:6px; font-family:'Inter'; font-weight:600; border-color:var(--accent-indigo); color:var(--accent-indigo); background:hsla(250,85%,58%,0.05); padding:8px 16px; border-radius:6px; cursor:pointer;">
                         <span class="material-symbols-outlined" style="font-size:18px;">add</span> Add Sprint Task
                     </button>

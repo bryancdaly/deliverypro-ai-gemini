@@ -500,47 +500,6 @@ h1, h2, h3, h4, h5, h6 {
     border-style: solid;
 }
 
-/* Scope Banner at the top of active views */
-.scope-banner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: hsla(250, 85%, 58%, 0.03);
-    border: 1px solid hsla(250, 85%, 58%, 0.1);
-    border-radius: var(--border-radius-md);
-    padding: 12px 20px;
-    margin-bottom: 24px;
-    animation: fadeIn 0.4s ease;
-}
-
-.scope-banner-icon {
-    font-size: 24px;
-    color: var(--accent-indigo);
-    background: hsla(250, 85%, 58%, 0.06);
-    border-radius: 50%;
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.scope-banner-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.scope-banner-text h4 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.scope-banner-text p {
-    font-size: 11.5px;
-    color: var(--color-text-secondary);
-}
-
 /* Strategic Contribution Inspector Modal Styles */
 .contrib-header-info {
     display: flex;
