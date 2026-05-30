@@ -1,0 +1,24 @@
+{
+  "name": "deliverypro-ai",
+  "version": "1.0.0",
+  "description": "DeliveryPro.AI Enterprise Strategic Portfolio Management Suite",
+  "type": "module",
+  "scripts": {
+    "start": "npx http-server -p 8080",
+    "dev": "npx http-server -p 8080"
+  },
+  "keywords": [
+    "ppm",
+    "portfolio",
+    "management",
+    "strategic",
+    "ai",
+    "copilot"
+  ],
+  "author": "Bryan Daly",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
