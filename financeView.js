@@ -40,6 +40,7 @@ class FinanceView {
         let totalOpExEtc = 0;
 
         state.scopes.forEach(scope => {
+            if (scope.isArchived) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             if (isIncluded && isScopeInHierarchy(scope.id)) {
                 totalCapExPlan += scope.financials.capEx.plan;
@@ -84,6 +85,7 @@ class FinanceView {
                         <h4>Capital Expenditure (CapEx) Cost Ledger</h4>
                         <div class="ledger-list">
                             ${state.scopes.map(s => {
+                                if (s.isArchived) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(s.id);
                                 if (!isIncluded || !isScopeInHierarchy(s.id)) return '';
                                 return `
@@ -107,6 +109,7 @@ class FinanceView {
                         <h4>Operational Expenditure (OpEx) Cost Ledger</h4>
                         <div class="ledger-list">
                             ${state.scopes.map(s => {
+                                if (s.isArchived) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(s.id);
                                 if (!isIncluded || !isScopeInHierarchy(s.id)) return '';
                                 return `
@@ -136,7 +139,7 @@ class FinanceView {
                     
                     <div class="strategy-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-height: none;">
                         ${state.benefits.map(b => {
-                            if (!isBenefitInHierarchy(b.id)) return '';
+                            if (b.isArchived || !isBenefitInHierarchy(b.id)) return '';
                             const realizedPct = Math.round(((b.metric.current - b.metric.baseline) / (b.metric.target - b.metric.baseline)) * 100);
                             return `
                                 <div class="benefit-profile-card ${b.isDisbenefit ? 'disbenefit' : ''}">

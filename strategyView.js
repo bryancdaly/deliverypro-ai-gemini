@@ -91,11 +91,16 @@ class StrategyView {
                 <div class="strategy-row full" style="margin-bottom: 24px;">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
-                            <h3>Tier 2: Objectives & OKRs (The "What")</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3>Tier 2: Objectives & OKRs (The "What")</h3>
+                                <button class="add-node-btn" data-type="okr" style="display:flex; align-items:center; gap:4px; font-family:'Inter'; border-radius:20px; font-weight:700;">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">add</span> Add OKR
+                                </button>
+                            </div>
                             <span class="tier-badge">OKRs</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;" id="okr-list-container">
-                            ${state.strategy.objectives.map(okr => {
+                            ${state.strategy.objectives.filter(okr => !okr.isArchived).map(okr => {
                                 const isExpanded = this.expandedIds.has(okr.id);
                                 return `
                                     <div class="strategy-node-card ${isLowRelevance(okr.id) ? 'low-relevance' : ''}" id="node-${okr.id}" data-node="okr" data-id="${okr.id}">
@@ -125,11 +130,16 @@ class StrategyView {
                 <div class="strategy-row full" style="margin-bottom: 24px;">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
-                            <h3>Tier 3: Business Outcomes & Benefits (The "Benefit")</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3>Tier 3: Business Outcomes & Benefits (The "Benefit")</h3>
+                                <button class="add-node-btn" data-type="benefit" style="display:flex; align-items:center; gap:4px; font-family:'Inter'; border-radius:20px; font-weight:700;">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">add</span> Add Benefit
+                                </button>
+                            </div>
                             <span class="tier-badge">Benefits</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;" id="benefit-list-container">
-                            ${state.benefits.map(b => {
+                            ${state.benefits.filter(b => !b.isArchived).map(b => {
                                 const isExpanded = this.expandedIds.has(b.id);
                                 return `
                                     <div class="strategy-node-card benefit-profile-card ${b.isDisbenefit ? 'disbenefit' : ''} ${isLowRelevance(b.id) ? 'low-relevance' : ''}" 
@@ -177,11 +187,16 @@ class StrategyView {
                 <div class="strategy-row full">
                     <div class="strategic-tier-box">
                         <div class="tier-title-bar">
-                            <h3>Tier 4: Active Execution Scopes & Outputs (The "How")</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3>Tier 4: Active Execution Scopes & Outputs (The "How")</h3>
+                                <button class="add-node-btn" data-type="scope" style="display:flex; align-items:center; gap:4px; font-family:'Inter'; border-radius:20px; font-weight:700;">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">add</span> Add Scope
+                                </button>
+                            </div>
                             <span class="tier-badge">Scopes</span>
                         </div>
                         <div class="strategy-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-height: none;" id="scope-list-container">
-                            ${state.scopes.map(s => {
+                            ${state.scopes.filter(s => !s.isArchived).map(s => {
                                 const isIncluded = state.scenario.includedProjectIds.includes(s.id);
                                 return `
                                     <div class="strategy-node-card ${isLowRelevance(s.id) ? 'low-relevance' : ''}" style="opacity: ${isIncluded ? (isLowRelevance(s.id) ? '0.22' : '1') : '0.4'}; cursor: pointer;" id="node-${s.id}" data-node="scope" data-id="${s.id}">
@@ -239,18 +254,18 @@ class StrategyView {
         
         let contributingScopes = [];
         if (type === "strat") {
-            contributingScopes = state.scopes;
+            contributingScopes = state.scopes.filter(s => !s.isArchived);
         } else if (type === "okr") {
-            const alignedBens = state.benefits.filter(b => b.alignedOkrId === id);
+            const alignedBens = state.benefits.filter(b => !b.isArchived && b.alignedOkrId === id);
             const scopeIds = [];
             alignedBens.forEach(b => b.scopeDependencies.forEach(sid => {
                 if (!scopeIds.includes(sid)) scopeIds.push(sid);
             }));
-            contributingScopes = scopeIds.map(sid => state.scopes.find(s => s.id === sid)).filter(Boolean);
+            contributingScopes = scopeIds.map(sid => state.scopes.find(s => s.id === sid)).filter(s => s && !s.isArchived);
         } else if (type === "benefit") {
             const ben = state.benefits.find(b => b.id === id);
             if (ben) {
-                contributingScopes = ben.scopeDependencies.map(sid => state.scopes.find(s => s.id === sid)).filter(Boolean);
+                contributingScopes = ben.scopeDependencies.map(sid => state.scopes.find(s => s.id === sid)).filter(s => s && !s.isArchived);
             }
         }
 
@@ -322,6 +337,16 @@ class StrategyView {
     }
 
     bindEvents() {
+        // Add buttons clicking
+        const addBtns = document.querySelectorAll(".add-node-btn");
+        addBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const type = btn.dataset.type;
+                this.openContributionInspector(type, null, store.state, "add");
+            });
+        });
+
         // Realization Month Slider input
         const slider = document.getElementById("realization-month-slider");
         const sliderVal = document.getElementById("slider-month-val");
@@ -407,7 +432,7 @@ class StrategyView {
         if (!rootCard) return;
 
         // 1. Link Tier 2 (OKRs) up to Tier 1 (Strategy Root)
-        state.strategy.objectives.forEach(okr => {
+        state.strategy.objectives.filter(okr => !okr.isArchived).forEach(okr => {
             const okrCard = document.getElementById(`node-${okr.id}`);
             if (okrCard) {
                 this.createSvgLine(svg, okrCard, rootCard, `path-okr-${okr.id}`, "lo-path");
@@ -415,7 +440,7 @@ class StrategyView {
         });
 
         // 2. Link Tier 3 (Benefits) up to Tier 2 (OKRs)
-        state.benefits.forEach(benefit => {
+        state.benefits.filter(b => !b.isArchived).forEach(benefit => {
             const benCard = document.getElementById(`node-${benefit.id}`);
             const okrCard = document.getElementById(`node-${benefit.alignedOkrId}`);
             if (benCard && okrCard) {
@@ -424,12 +449,13 @@ class StrategyView {
         });
 
         // 3. Link Tier 4 (Scopes) up to Tier 3 (Benefits)
-        state.benefits.forEach(benefit => {
+        state.benefits.filter(b => !b.isArchived).forEach(benefit => {
             const benCard = document.getElementById(`node-${benefit.id}`);
             if (benCard) {
                 benefit.scopeDependencies.forEach(scopeId => {
                     const scopeCard = document.getElementById(`node-${scopeId}`);
-                    if (scopeCard) {
+                    const scope = state.scopes.find(sc => sc.id === scopeId);
+                    if (scopeCard && scope && !scope.isArchived) {
                         this.createSvgLine(svg, scopeCard, benCard, `path-scope-${scopeId}-${benefit.id}`, `lo-path scope-link ${benefit.isDisbenefit ? 'disben-link' : 'ben-link'}`);
                     }
                 });
@@ -558,7 +584,7 @@ class StrategyView {
         }
     }
 
-    openContributionInspector(type, id, state) {
+    openContributionInspector(type, id, state, mode = "inspect") {
         const modal = document.getElementById("contribution-modal");
         const modalTitle = document.getElementById("contrib-modal-title");
         const modalBody = document.getElementById("contrib-modal-body");
@@ -581,320 +607,761 @@ class StrategyView {
         let headerHtml = "";
         let bodyHtml = "";
 
-        if (type === "strat") {
-            modalTitle.textContent = "Enterprise Strategy Inspector";
-            headerHtml = `
-                <div class="contrib-header-info">
-                    <span class="contrib-badge strat">Enterprise Strategy</span>
-                    <h3>${state.strategy.title}</h3>
-                    <p class="help-text">${state.strategy.description}</p>
-                </div>
-            `;
-
-            // List OKRs
-            const okrsHtml = `
-                <div class="contrib-section-title">Supporting Strategic OKRs & Targets</div>
-                <div class="contrib-project-list" style="margin-bottom: 16px;">
-                    ${state.strategy.objectives.map(okr => {
-                        const score = Math.round((okr.current / okr.target) * 100);
-                        return `
-                            <div class="contrib-project-card" style="padding: 10px 14px;">
-                                <div class="contrib-card-header">
-                                    <span class="contrib-card-title" style="font-size: 12px; font-weight: 700;">${okr.title}</span>
-                                    <span class="contrib-status-badge realizing-green">${score}% Met</span>
-                                </div>
-                                <p class="help-text" style="font-size: 10px;">Target Metric: ${okr.metric} (${okr.target}${okr.unit})</p>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-
-            // Find all contributing projects (scopes) across all benefits
-            let projectsHtml = "";
-            state.scopes.forEach(scope => {
-                const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
-                
-                // Find all benefits enabled by this project
-                const alignedBens = state.benefits.filter(b => b.scopeDependencies.includes(scope.id));
-                if (alignedBens.length === 0) return;
-
-                // Calculate health badge status
-                let statusBadge = "realizing-green";
-                let statusText = "Value Realizing";
-                
-                const isDelayed = state.scenario.scheduleOffsets[scope.id] > 0;
-                if (!isIncluded || scope.status === "Proposed") {
-                    statusBadge = "proposed-grey";
-                    statusText = "Proposed / Excluded";
-                } else if (isDelayed) {
-                    statusBadge = "delayed-red";
-                    statusText = "Schedule Delayed";
-                } else {
-                    // Check if any enabling benefit is still in its lag maturation offset period
-                    const isMaturing = alignedBens.every(ben => state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths);
-                    if (isMaturing) {
-                        statusBadge = "maturing-amber";
-                        statusText = "In Flight - Maturing";
-                    }
-                }
-
-                // Calculate average weight contribution
-                let avgWeight = 0;
-                alignedBens.forEach(ben => {
-                    const w = ben.contributionWeights ? (ben.contributionWeights[scope.id] || 100) : 100;
-                    avgWeight += w;
-                });
-                avgWeight = Math.round(avgWeight / alignedBens.length);
-
-                const alignedBensNames = alignedBens.map(b => b.name.substring(0, 30) + "...").join(", ");
-
-                projectsHtml += `
-                    <div class="contrib-project-card">
-                        <div class="contrib-card-header">
-                            <span class="contrib-card-title">${scope.name}</span>
-                            <span class="contrib-status-badge ${statusBadge}">${statusText}</span>
-                        </div>
-                        <p class="help-text" style="font-size:11px; margin-top:2px;">
-                            Enables: <i>${alignedBensNames}</i>
-                        </p>
-                        <div class="contrib-progress-label" style="margin-top: 8px;">
-                            <span>Avg strategic weight: <b>${avgWeight}%</b></span>
-                            <span>Project progress: <b>${scope.progress}%</b></span>
-                        </div>
-                        <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
-                            <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
-                        </div>
+        if (mode === "inspect") {
+            if (type === "strat") {
+                modalTitle.textContent = "Enterprise Strategy Inspector";
+                headerHtml = `
+                    <div class="contrib-header-info">
+                        <span class="contrib-badge strat">Enterprise Strategy</span>
+                        <h3>${state.strategy.title}</h3>
+                        <p class="help-text">${state.strategy.description}</p>
                     </div>
                 `;
-            });
 
-            const corpProjectsHtml = `
-                <div class="contrib-section-title">Contributing Corporate Deliverables</div>
-                <div class="contrib-project-list">
-                    ${projectsHtml || `<div class="help-text">No active corporate projects map to this strategy.</div>`}
-                </div>
-            `;
+                // List OKRs
+                const okrsHtml = `
+                    <div class="contrib-section-title">Supporting Strategic OKRs & Targets</div>
+                    <div class="contrib-project-list" style="margin-bottom: 16px;">
+                        ${state.strategy.objectives.filter(okr => !okr.isArchived).map(okr => {
+                            const score = Math.round((okr.current / okr.target) * 100);
+                            return `
+                                <div class="contrib-project-card" style="padding: 10px 14px;">
+                                    <div class="contrib-card-header">
+                                        <span class="contrib-card-title" style="font-size: 12px; font-weight: 700;">${okr.title}</span>
+                                        <span class="contrib-status-badge realizing-green">${score}% Met</span>
+                                    </div>
+                                    <p class="help-text" style="font-size: 10px;">Target Metric: ${okr.metric} (${okr.target}${okr.unit})</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
 
-            bodyHtml = okrsHtml + corpProjectsHtml;
-        }
+                // Find all contributing projects (scopes) across all benefits
+                let projectsHtml = "";
+                state.scopes.filter(scope => !scope.isArchived).forEach(scope => {
+                    const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
+                    const alignedBens = state.benefits.filter(b => !b.isArchived && b.scopeDependencies.includes(scope.id));
+                    if (alignedBens.length === 0) return;
 
-        else if (type === "okr") {
-            const okr = state.strategy.objectives.find(o => o.id === id);
-            if (!okr) return;
-
-            modalTitle.textContent = "Strategic OKR Contribution Inspector";
-            headerHtml = `
-                <div class="contrib-header-info">
-                    <span class="contrib-badge okr">Strategic Objective / OKR</span>
-                    <h3>${okr.title}</h3>
-                    <p class="help-text">Target Metric: <b>${okr.metric}</b> | Current Realization: <b>${okr.current}/${okr.target}${okr.unit}</b></p>
-                </div>
-            `;
-
-            // Find contributing benefits and their active projects
-            const alignedBens = state.benefits.filter(b => b.alignedOkrId === id);
-            
-            let projectsHtml = "";
-            let foundProjects = [];
-
-            alignedBens.forEach(ben => {
-                ben.scopeDependencies.forEach(scopeId => {
-                    const scope = state.scopes.find(s => s.id === scopeId);
-                    if (scope && !foundProjects.includes(scopeId)) {
-                        foundProjects.push(scopeId);
-                        
-                        const isIncluded = state.scenario.includedProjectIds.includes(scopeId);
-                        const weight = ben.contributionWeights ? (ben.contributionWeights[scopeId] || 100) : 100;
-                        
-                        // Calculate health badge status
-                        let statusBadge = "realizing-green";
-                        let statusText = "Value Realizing";
-                        
-                        const isDelayed = state.scenario.scheduleOffsets[scopeId] > 0;
-                        if (!isIncluded || scope.status === "Proposed") {
-                            statusBadge = "proposed-grey";
-                            statusText = "Proposed / Not Included";
-                        } else if (isDelayed) {
-                            statusBadge = "delayed-red";
-                            statusText = "Schedule Delayed";
-                        } else if (state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths) {
+                    let statusBadge = "realizing-green";
+                    let statusText = "Value Realizing";
+                    
+                    const isDelayed = state.scenario.scheduleOffsets[scope.id] > 0;
+                    if (!isIncluded || scope.status === "Proposed") {
+                        statusBadge = "proposed-grey";
+                        statusText = "Proposed / Excluded";
+                    } else if (isDelayed) {
+                        statusBadge = "delayed-red";
+                        statusText = "Schedule Delayed";
+                    } else {
+                        const isMaturing = alignedBens.every(ben => state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths);
+                        if (isMaturing) {
                             statusBadge = "maturing-amber";
                             statusText = "In Flight - Maturing";
                         }
-
-                        projectsHtml += `
-                            <div class="contrib-project-card">
-                                <div class="contrib-card-header">
-                                    <span class="contrib-card-title">${scope.name}</span>
-                                    <span class="contrib-status-badge ${statusBadge}">${statusText}</span>
-                                </div>
-                                <p class="help-text" style="font-size:11px; margin-top:2px;">
-                                    Via Outcome: <i>${ben.name.substring(0, 50)}...</i>
-                                </p>
-                                <div class="contrib-progress-label" style="margin-top: 8px;">
-                                    <span>Strategic contribution weight: <b>${weight}%</b> of enabling benefit</span>
-                                    <span>Project progress: <b>${scope.progress}%</b></span>
-                                </div>
-                                <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
-                                    <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
-                                </div>
-                            </div>
-                        `;
                     }
+
+                    let avgWeight = 0;
+                    alignedBens.forEach(ben => {
+                        const w = ben.contributionWeights ? (ben.contributionWeights[scope.id] || 100) : 100;
+                        avgWeight += w;
+                    });
+                    avgWeight = Math.round(avgWeight / alignedBens.length);
+
+                    const alignedBensNames = alignedBens.map(b => b.name.substring(0, 30) + "...").join(", ");
+
+                    projectsHtml += `
+                        <div class="contrib-project-card">
+                            <div class="contrib-card-header">
+                                <span class="contrib-card-title">${scope.name}</span>
+                                <span class="contrib-status-badge ${statusBadge}">${statusText}</span>
+                            </div>
+                            <p class="help-text" style="font-size:11px; margin-top:2px;">
+                                Enables: <i>${alignedBensNames}</i>
+                            </p>
+                            <div class="contrib-progress-label" style="margin-top: 8px;">
+                                <span>Avg strategic weight: <b>${avgWeight}%</b></span>
+                                <span>Project progress: <b>${scope.progress}%</b></span>
+                            </div>
+                            <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
+                                <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
+                            </div>
+                        </div>
+                    `;
                 });
-            });
 
-            bodyHtml = `
-                <div class="contrib-section-title">Contributing Execution Projects</div>
-                <div class="contrib-project-list">
-                    ${projectsHtml || `<div class="help-text">No active project scopes contribute directly to this OKR.</div>`}
-                </div>
-            `;
-        }
+                const corpProjectsHtml = `
+                    <div class="contrib-section-title">Contributing Corporate Deliverables</div>
+                    <div class="contrib-project-list">
+                        ${projectsHtml || `<div class="help-text">No active corporate projects map to this strategy.</div>`}
+                    </div>
+                `;
 
-        else if (type === "benefit") {
-            const ben = state.benefits.find(b => b.id === id);
-            if (!ben) return;
+                bodyHtml = okrsHtml + corpProjectsHtml;
+            }
 
-            modalTitle.textContent = "Business Outcome & Benefit Inspector";
-            const realizedPct = Math.round(((ben.metric.current - ben.metric.baseline) / (ben.metric.target - ben.metric.baseline)) * 100);
-            
-            headerHtml = `
-                <div class="contrib-header-info">
-                    <span class="contrib-badge ${ben.isDisbenefit ? 'disben' : 'ben'}">${ben.isDisbenefit ? 'Disbenefit trade-off' : 'Business Benefit Outcome'}</span>
-                    <h3>${ben.name}</h3>
-                    <p class="help-text">
-                        Target Metric: <b>${ben.metric.target.toLocaleString()}${ben.metric.unit}</b> | 
-                        Current Maturation: <b>${ben.metric.current.toLocaleString()}/${ben.metric.target.toLocaleString()}${ben.metric.unit} (${realizedPct}% realized)</b>
-                    </p>
-                    <p class="help-text" style="margin-top: 4px; font-size:11px;">
-                        Accountable Owner: <b>${ben.owner}</b> | Realization Lag: <b>${ben.realizationTimeline.startOffsetMonths}m lag</b>
-                    </p>
-                </div>
-            `;
+            else if (type === "okr") {
+                const okr = state.strategy.objectives.find(o => o.id === id);
+                if (!okr) return;
 
-            // List direct scope dependencies and their weights
-            const scopesListHtml = ben.scopeDependencies.map(scopeId => {
-                const scope = state.scopes.find(s => s.id === scopeId);
-                if (!scope) return "";
+                modalTitle.textContent = "Strategic OKR Contribution Inspector";
+                headerHtml = `
+                    <div class="contrib-header-info">
+                        <span class="contrib-badge okr">Strategic Objective / OKR</span>
+                        <h3>${okr.title}</h3>
+                        <p class="help-text">Target Metric: <b>${okr.metric}</b> | Current Realization: <b>${okr.current}/${okr.target}${okr.unit}</b></p>
+                    </div>
+                `;
 
-                const weight = ben.contributionWeights ? (ben.contributionWeights[scopeId] || 100) : 100;
-                const isIncluded = state.scenario.includedProjectIds.includes(scopeId);
+                const alignedBens = state.benefits.filter(b => !b.isArchived && b.alignedOkrId === id);
+                let projectsHtml = "";
+                let foundProjects = [];
+
+                alignedBens.forEach(ben => {
+                    ben.scopeDependencies.forEach(scopeId => {
+                        const scope = state.scopes.find(s => s.id === scopeId);
+                        if (scope && !scope.isArchived && !foundProjects.includes(scopeId)) {
+                            foundProjects.push(scopeId);
+                            
+                            const isIncluded = state.scenario.includedProjectIds.includes(scopeId);
+                            const weight = ben.contributionWeights ? (ben.contributionWeights[scopeId] || 100) : 100;
+                            
+                            let statusBadge = "realizing-green";
+                            let statusText = "Value Realizing";
+                            
+                            const isDelayed = state.scenario.scheduleOffsets[scopeId] > 0;
+                            if (!isIncluded || scope.status === "Proposed") {
+                                statusBadge = "proposed-grey";
+                                statusText = "Proposed / Not Included";
+                            } else if (isDelayed) {
+                                statusBadge = "delayed-red";
+                                statusText = "Schedule Delayed";
+                            } else if (state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths) {
+                                statusBadge = "maturing-amber";
+                                statusText = "In Flight - Maturing";
+                            }
+
+                            projectsHtml += `
+                                <div class="contrib-project-card">
+                                    <div class="contrib-card-header">
+                                        <span class="contrib-card-title">${scope.name}</span>
+                                        <span class="contrib-status-badge ${statusBadge}">${statusText}</span>
+                                    </div>
+                                    <p class="help-text" style="font-size:11px; margin-top:2px;">
+                                        Via Outcome: <i>${ben.name.substring(0, 50)}...</i>
+                                    </p>
+                                    <div class="contrib-progress-label" style="margin-top: 8px;">
+                                        <span>Strategic contribution weight: <b>${weight}%</b> of enabling benefit</span>
+                                        <span>Project progress: <b>${scope.progress}%</b></span>
+                                    </div>
+                                    <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
+                                        <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                });
+
+                bodyHtml = `
+                    <div class="contrib-section-title">Contributing Execution Projects</div>
+                    <div class="contrib-project-list">
+                        ${projectsHtml || `<div class="help-text">No active project scopes contribute directly to this OKR.</div>`}
+                    </div>
+                `;
+            }
+
+            else if (type === "benefit") {
+                const ben = state.benefits.find(b => b.id === id);
+                if (!ben) return;
+
+                modalTitle.textContent = "Business Outcome & Benefit Inspector";
+                const realizedPct = Math.round(((ben.metric.current - ben.metric.baseline) / (ben.metric.target - ben.metric.baseline)) * 100);
+                
+                headerHtml = `
+                    <div class="contrib-header-info">
+                        <span class="contrib-badge ${ben.isDisbenefit ? 'disben' : 'ben'}">${ben.isDisbenefit ? 'Disbenefit trade-off' : 'Business Benefit Outcome'}</span>
+                        <h3>${ben.name}</h3>
+                        <p class="help-text">
+                            Target Metric: <b>${ben.metric.target.toLocaleString()}${ben.metric.unit}</b> | 
+                            Current Maturation: <b>${ben.metric.current.toLocaleString()}/${ben.metric.target.toLocaleString()}${ben.metric.unit} (${realizedPct}% realized)</b>
+                        </p>
+                        <p class="help-text" style="margin-top: 4px; font-size:11px;">
+                            Accountable Owner: <b>${ben.owner}</b> | Realization Lag: <b>${ben.realizationTimeline.startOffsetMonths}m lag</b>
+                        </p>
+                    </div>
+                `;
+
+                const scopesListHtml = ben.scopeDependencies.map(scopeId => {
+                    const scope = state.scopes.find(s => s.id === scopeId);
+                    if (!scope || scope.isArchived) return "";
+
+                    const weight = ben.contributionWeights ? (ben.contributionWeights[scopeId] || 100) : 100;
+                    const isIncluded = state.scenario.includedProjectIds.includes(scopeId);
+                    const cost = scope.financials.capEx.plan + scope.financials.opEx.plan;
+                    
+                    let statusBadge = "realizing-green";
+                    let statusText = "Value Realizing";
+                    
+                    const isDelayed = state.scenario.scheduleOffsets[scopeId] > 0;
+                    if (!isIncluded || scope.status === "Proposed") {
+                        statusBadge = "proposed-grey";
+                        statusText = "Proposed / Excluded";
+                    } else if (isDelayed) {
+                        statusBadge = "delayed-red";
+                        statusText = "Schedule Delayed";
+                    } else if (state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths) {
+                        statusBadge = "maturing-amber";
+                        statusText = "In Flight - Maturing";
+                    }
+
+                    let contributionVolume = "";
+                    if (ben.metric.unit === "$") {
+                        const shareVal = (weight / 100 * ben.metric.target);
+                        const currentShareVal = (scope.progress / 100 * shareVal);
+                        contributionVolume = `Estimated Contribution: <b>$${currentShareVal.toLocaleString()}</b> / $${shareVal.toLocaleString()}`;
+                    } else {
+                        const shareVal = (weight / 100 * ben.metric.target);
+                        const currentShareVal = (scope.progress / 100 * shareVal);
+                        contributionVolume = `Estimated Contribution: <b>${currentShareVal.toFixed(1)}${ben.metric.unit}</b> / ${shareVal.toFixed(1)}${ben.metric.unit}`;
+                    }
+
+                    return `
+                        <div class="contrib-project-card">
+                            <div class="contrib-card-header">
+                                <span class="contrib-card-title">${scope.name}</span>
+                                <span class="contrib-status-badge ${statusBadge}">${statusText}</span>
+                            </div>
+                            <p class="help-text" style="font-size:11px; margin-top:2px;">
+                                ${contributionVolume} (${weight}% share of target outcome)
+                            </p>
+                            <div class="contrib-progress-label" style="margin-top: 8px;">
+                                <span>Project execution: <b>${scope.progress}%</b> complete</span>
+                                <span>Planned cost: <b>$${cost.toLocaleString()}</b></span>
+                            </div>
+                            <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
+                                <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                bodyHtml = `
+                    <div class="contrib-section-title">Enabling Project Outputs</div>
+                    <div class="contrib-project-list">
+                        ${scopesListHtml || `<div class="help-text">No active project scopes enable this benefit.</div>`}
+                    </div>
+                `;
+            }
+
+            else if (type === "scope") {
+                const scope = state.scopes.find(s => s.id === id);
+                if (!scope) return;
+
+                modalTitle.textContent = "Execution Project Scope Inspector";
                 const cost = scope.financials.capEx.plan + scope.financials.opEx.plan;
-                
-                // Calculate health badge status
-                let statusBadge = "realizing-green";
-                let statusText = "Value Realizing";
-                
-                const isDelayed = state.scenario.scheduleOffsets[scopeId] > 0;
-                if (!isIncluded || scope.status === "Proposed") {
-                    statusBadge = "proposed-grey";
-                    statusText = "Proposed / Excluded";
-                } else if (isDelayed) {
-                    statusBadge = "delayed-red";
-                    statusText = "Schedule Delayed";
-                } else if (state.scenario.realizationMonthSlider < ben.realizationTimeline.startOffsetMonths) {
-                    statusBadge = "maturing-amber";
-                    statusText = "In Flight - Maturing";
-                }
+                const spend = scope.financials.capEx.actual + scope.financials.opEx.actual;
 
-                // Contribution volume
-                let contributionVolume = "";
-                if (ben.metric.unit === "$") {
-                    const shareVal = (weight / 100 * ben.metric.target);
-                    const currentShareVal = (scope.progress / 100 * shareVal);
-                    contributionVolume = `Estimated Contribution: <b>$${currentShareVal.toLocaleString()}</b> / $${shareVal.toLocaleString()}`;
-                } else {
-                    const shareVal = (weight / 100 * ben.metric.target);
-                    const currentShareVal = (scope.progress / 100 * shareVal);
-                    contributionVolume = `Estimated Contribution: <b>${currentShareVal.toFixed(1)}${ben.metric.unit}</b> / ${shareVal.toFixed(1)}${ben.metric.unit}`;
-                }
-
-                return `
-                    <div class="contrib-project-card">
-                        <div class="contrib-card-header">
-                            <span class="contrib-card-title">${scope.name}</span>
-                            <span class="contrib-status-badge ${statusBadge}">${statusText}</span>
-                        </div>
-                        <p class="help-text" style="font-size:11px; margin-top:2px;">
-                            ${contributionVolume} (${weight}% share of target outcome)
-                        </p>
-                        <div class="contrib-progress-label" style="margin-top: 8px;">
-                            <span>Project execution: <b>${scope.progress}%</b> complete</span>
-                            <span>Planned cost: <b>$${cost.toLocaleString()}</b></span>
-                        </div>
-                        <div class="benefit-progress-bar" style="height: 6px; margin-top: 4px;">
-                            <div class="benefit-progress-fill" style="width: ${scope.progress}%; background: var(--accent-indigo);"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            bodyHtml = `
-                <div class="contrib-section-title">Enabling Project Outputs</div>
-                <div class="contrib-project-list">
-                    ${scopesListHtml || `<div class="help-text">No active project scopes enable this benefit.</div>`}
-                </div>
-            `;
-        }
-
-        else if (type === "scope") {
-            const scope = state.scopes.find(s => s.id === id);
-            if (!scope) return;
-
-            modalTitle.textContent = "Execution Project Scope Inspector";
-            const cost = scope.financials.capEx.plan + scope.financials.opEx.plan;
-            const spend = scope.financials.capEx.actual + scope.financials.opEx.actual;
-
-            headerHtml = `
-                <div class="contrib-header-info">
-                    <span class="contrib-badge strat">Project Execution Scope</span>
-                    <h3>${scope.name}</h3>
-                    <p class="help-text">${scope.description}</p>
-                    <p class="help-text" style="margin-top: 4px; font-size:11px;">
-                        Methodology: <b>${scope.methodology}</b> | Expected Value: <b>${scope.expectedValue} pts</b> | Allocations: <b>${scope.fteAllocations} FTEs</b>
-                    </p>
-                </div>
-            `;
-
-            // List parent benefits
-            const parents = state.benefits.filter(b => b.scopeDependencies.includes(id));
-            const parentsHtml = parents.map(b => {
-                const weight = b.contributionWeights ? (b.contributionWeights[id] || 100) : 100;
-                return `
-                    <div class="contrib-project-card">
-                        <div class="contrib-card-header">
-                            <span class="contrib-card-title">${b.name}</span>
-                            <span class="contrib-status-badge realizing-green">${b.isDisbenefit ? 'Disbenefit' : 'Benefit'}</span>
-                        </div>
-                        <p class="help-text" style="font-size:11px; margin-top:4px;">
-                            Project contributes a **${weight}% weight share** directly to this outcome.
+                headerHtml = `
+                    <div class="contrib-header-info">
+                        <span class="contrib-badge strat">Project Execution Scope</span>
+                        <h3>${scope.name}</h3>
+                        <p class="help-text">${scope.description}</p>
+                        <p class="help-text" style="margin-top: 4px; font-size:11px;">
+                            Methodology: <b>${scope.methodology}</b> | Expected Value: <b>${scope.expectedValue} pts</b> | Allocations: <b>${scope.fteAllocations} FTEs</b>
                         </p>
                     </div>
                 `;
-            }).join('');
 
-            bodyHtml = `
-                <div class="contrib-section-title">Financial & Value Rolldowns</div>
-                <div class="est-details-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                    <div class="cons-card" style="padding: 10px;">
-                        <span class="cons-card-lbl">Execution Progress</span>
-                        <div class="cons-card-val" style="font-size: 16px; margin-top: 4px; color: var(--accent-indigo);">${scope.progress}% Complete</div>
+                const parents = state.benefits.filter(b => !b.isArchived && b.scopeDependencies.includes(id));
+                const parentsHtml = parents.map(b => {
+                    const weight = b.contributionWeights ? (b.contributionWeights[id] || 100) : 100;
+                    return `
+                        <div class="contrib-project-card">
+                            <div class="contrib-card-header">
+                                <span class="contrib-card-title">${b.name}</span>
+                                <span class="contrib-status-badge realizing-green">${b.isDisbenefit ? 'Disbenefit' : 'Benefit'}</span>
+                            </div>
+                            <p class="help-text" style="font-size:11px; margin-top:4px;">
+                                Project contributes a **${weight}% weight share** directly to this outcome.
+                            </p>
+                        </div>
+                    `;
+                }).join('');
+
+                bodyHtml = `
+                    <div class="contrib-section-title">Financial & Value Rolldowns</div>
+                    <div class="est-details-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                        <div class="cons-card" style="padding: 10px;">
+                            <span class="cons-card-lbl">Execution Progress</span>
+                            <div class="cons-card-val" style="font-size: 16px; margin-top: 4px; color: var(--accent-indigo);">${scope.progress}% Complete</div>
+                        </div>
+                        <div class="cons-card" style="padding: 10px;">
+                            <span class="cons-card-lbl">Financial Burndown</span>
+                            <div class="cons-card-val" style="font-size: 16px; margin-top: 4px; color: var(--color-success);">$${spend.toLocaleString()} / $${cost.toLocaleString()}</div>
+                        </div>
                     </div>
-                    <div class="cons-card" style="padding: 10px;">
-                        <span class="cons-card-lbl">Financial Burndown</span>
-                        <div class="cons-card-val" style="font-size: 16px; margin-top: 4px; color: var(--color-success);">$${spend.toLocaleString()} / $${cost.toLocaleString()}</div>
+                    <div class="contrib-section-title">Enables Aligned Benefits</div>
+                    <div class="contrib-project-list">
+                        ${parentsHtml || `<div class="help-text">This project scope is not mapped to any business benefits.</div>`}
                     </div>
-                </div>
-                <div class="contrib-section-title">Enables Aligned Benefits</div>
-                <div class="contrib-project-list">
-                    ${parentsHtml || `<div class="help-text">This project scope is not mapped to any business benefits.</div>`}
-                </div>
-            `;
+                `;
+            }
+
+            let bottomActionBar = "";
+            if (type !== "strat") {
+                bottomActionBar = `
+                    <div class="modal-action-bar">
+                        <button class="btn btn-secondary" id="inspect-edit-btn" style="border-color:var(--accent-indigo); color:var(--accent-indigo); display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">edit</span> Edit Details
+                        </button>
+                        <button class="btn btn-secondary" id="inspect-close-btn" style="border-color:var(--color-success); color:var(--color-success); display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Close/Complete
+                        </button>
+                        <button class="btn btn-secondary" id="inspect-archive-btn" style="border-color:var(--color-warning); color:var(--color-warning); display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">archive</span> Archive Record
+                        </button>
+                    </div>
+                `;
+            }
+
+            modalBody.innerHTML = headerHtml + bodyHtml + bottomActionBar;
+
+            if (type !== "strat") {
+                const editBtn = document.getElementById("inspect-edit-btn");
+                const closeBtnActions = document.getElementById("inspect-close-btn");
+                const archiveBtn = document.getElementById("inspect-archive-btn");
+
+                const recordName = type === 'okr' ? state.strategy.objectives.find(o => o.id === id).title :
+                                   type === 'benefit' ? state.benefits.find(b => b.id === id).name :
+                                   state.scopes.find(s => s.id === id).name;
+
+                if (editBtn) editBtn.onclick = () => this.openContributionInspector(type, id, state, "edit");
+
+                if (closeBtnActions) {
+                    closeBtnActions.onclick = () => {
+                        store.commitTransaction(`Complete ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
+                            if (type === 'okr') {
+                                const okr = s.strategy.objectives.find(o => o.id === id);
+                                if (okr) okr.current = okr.target;
+                            } else if (type === 'benefit') {
+                                const ben = s.benefits.find(b => b.id === id);
+                                if (ben) ben.metric.current = ben.metric.target;
+                            } else if (type === 'scope') {
+                                const scope = s.scopes.find(sc => sc.id === id);
+                                if (scope) {
+                                    scope.status = "Completed";
+                                    scope.progress = 100;
+                                    s.tasks.filter(t => t.scopeId === id).forEach(t => t.status = "done");
+                                }
+                            }
+                        });
+                        modal.classList.add("hidden");
+                        this.render(store.state);
+                    };
+                }
+
+                if (archiveBtn) {
+                    archiveBtn.onclick = () => {
+                        store.commitTransaction(`Archive ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
+                            if (type === 'okr') {
+                                const okr = s.strategy.objectives.find(o => o.id === id);
+                                if (okr) okr.isArchived = true;
+                            } else if (type === 'benefit') {
+                                const ben = s.benefits.find(b => b.id === id);
+                                if (ben) ben.isArchived = true;
+                            } else if (type === 'scope') {
+                                const scope = s.scopes.find(sc => sc.id === id);
+                                if (scope) scope.isArchived = true;
+                            }
+                        });
+                        modal.classList.add("hidden");
+                        this.render(store.state);
+                    };
+                }
+            }
+        } 
+        
+        else if (mode === "edit" || mode === "add") {
+            const isEdit = mode === "edit";
+            modalTitle.textContent = isEdit ? `Edit ${type.toUpperCase()}` : `Add New ${type.toUpperCase()}`;
+
+            let formHtml = "";
+
+            if (type === "okr") {
+                const okr = isEdit ? state.strategy.objectives.find(o => o.id === id) : null;
+                formHtml = `
+                    <div class="contrib-form-group">
+                        <label>Objective / OKR Title</label>
+                        <input type="text" id="form-okr-title" value="${okr ? okr.title : ''}" required placeholder="e.g. Expand export trade margin by 4%">
+                    </div>
+                    <div class="contrib-form-group">
+                        <label>Target Metric Name</label>
+                        <input type="text" id="form-okr-metric" value="${okr ? okr.metric : ''}" required placeholder="e.g. Operational Margin">
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>Target Value</label>
+                            <input type="number" id="form-okr-target" value="${okr ? okr.target : 0}" required>
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Metric Unit</label>
+                            <input type="text" id="form-okr-unit" value="${okr ? okr.unit : ''}" placeholder="e.g. %, $, pts">
+                        </div>
+                    </div>
+                `;
+            } 
+            
+            else if (type === "benefit") {
+                const ben = isEdit ? state.benefits.find(b => b.id === id) : null;
+                formHtml = `
+                    <div class="contrib-form-group">
+                        <label>Benefit Outcome Name</label>
+                        <input type="text" id="form-ben-name" value="${ben ? ben.name : ''}" required placeholder="e.g. Shift regional haulers to bio-diesel packs">
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>Outcome Classification</label>
+                            <select id="form-ben-disbenefit">
+                                <option value="false" ${ben && !ben.isDisbenefit ? 'selected' : ''}>Positive Business Benefit</option>
+                                <option value="true" ${ben && ben.isDisbenefit ? 'selected' : ''}>Negative Trade-Off (Disbenefit)</option>
+                            </select>
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Aligned Strategic OKR Target</label>
+                            <select id="form-ben-okr">
+                                ${state.strategy.objectives.filter(o => !o.isArchived).map(o => `
+                                    <option value="${o.id}" ${ben && ben.alignedOkrId === o.id ? 'selected' : ''}>${o.title}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="contrib-form-group">
+                        <label>Target Outcome Metric</label>
+                        <input type="text" id="form-ben-metric-name" value="${ben ? ben.metric.name : ''}" required placeholder="e.g. Bio-diesel Transition ratio">
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>Baseline Metric Value</label>
+                            <input type="number" id="form-ben-baseline" value="${ben ? ben.metric.baseline : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Target Metric Value</label>
+                            <input type="number" id="form-ben-target" value="${ben ? ben.metric.target : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Metric Unit</label>
+                            <input type="text" id="form-ben-unit" value="${ben ? ben.metric.unit : ''}">
+                        </div>
+                    </div>
+                    <div class="contrib-form-group">
+                        <label>Accountable Executive Owner</label>
+                        <input type="text" id="form-ben-owner" value="${ben ? ben.owner : ''}" required placeholder="e.g. Sarah Connor (Logistics Director)">
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>Realization Offset Lag (Months)</label>
+                            <input type="number" id="form-ben-lag-start" value="${ben ? ben.realizationTimeline.startOffsetMonths : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Realization Duration Run (Months)</label>
+                            <input type="number" id="form-ben-lag-duration" value="${ben ? ben.realizationTimeline.durationMonths : 12}">
+                        </div>
+                    </div>
+                    <div class="contrib-form-group">
+                        <label>Contributing Project Scopes</label>
+                        <div style="display:flex; flex-direction:column; gap:4px; max-height: 120px; overflow-y: auto; background: hsla(0,0%,100%,0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--glass-border);">
+                            ${state.scopes.filter(s => !s.isArchived).map(s => {
+                                const isChecked = ben && ben.scopeDependencies.includes(s.id);
+                                return `
+                                    <label style="display:flex; align-items:center; gap:8px; font-size:11px; text-transform:none; color:var(--color-text-secondary); cursor:pointer;">
+                                        <input type="checkbox" class="form-ben-scope-checkbox" value="${s.id}" ${isChecked ? 'checked' : ''} style="width:14px; height:14px;">
+                                        ${s.name}
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } 
+            
+            else if (type === "scope") {
+                const scope = isEdit ? state.scopes.find(s => s.id === id) : null;
+                formHtml = `
+                    <div class="contrib-form-group">
+                        <label>Execution Project Scope Title</label>
+                        <input type="text" id="form-scope-name" value="${scope ? scope.name : ''}" required placeholder="e.g. Smart Hub Drone Dispatch Hubs">
+                    </div>
+                    <div class="contrib-form-group">
+                        <label>Scope Description / Brief</label>
+                        <textarea id="form-scope-desc" rows="3" required placeholder="Describe what execution goals will be achieved by this project scope.">${scope ? scope.description : ''}</textarea>
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>Delivery Methodology</label>
+                            <select id="form-scope-methodology">
+                                <option value="Agile" ${scope && scope.methodology === 'Agile' ? 'selected' : ''}>Agile Delivery</option>
+                                <option value="Waterfall" ${scope && scope.methodology === 'Waterfall' ? 'selected' : ''}>Waterfall Delivery</option>
+                                <option value="Hybrid" ${scope && scope.methodology === 'Hybrid' ? 'selected' : ''}>Hybrid Sandbox</option>
+                            </select>
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Current Status</label>
+                            <select id="form-scope-status">
+                                <option value="Proposed" ${scope && scope.status === 'Proposed' ? 'selected' : ''}>Proposed Sandbox</option>
+                                <option value="In Flight" ${scope && scope.status === 'In Flight' ? 'selected' : ''}>In Flight</option>
+                                <option value="Completed" ${scope && scope.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>Strategic Value Rating (0-100 pts)</label>
+                            <input type="number" id="form-scope-value" min="0" max="100" value="${scope ? scope.expectedValue : 50}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>Execution Risk Profile (0-100%)</label>
+                            <input type="number" id="form-scope-risk" min="0" max="100" value="${scope ? scope.executionRisk : 30}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>FTE Allocations (Load)</label>
+                            <input type="number" id="form-scope-fte" min="0" value="${scope ? scope.fteAllocations : 2}">
+                        </div>
+                    </div>
+                    
+                    <div class="contrib-section-title" style="margin-top:12px;">CapEx Investment Ledgers</div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>CapEx Plan ($)</label>
+                            <input type="number" id="form-scope-capex-plan" value="${scope ? scope.financials.capEx.plan : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>CapEx Actual ($)</label>
+                            <input type="number" id="form-scope-capex-actual" value="${scope ? scope.financials.capEx.actual : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>CapEx ETC ($)</label>
+                            <input type="number" id="form-scope-capex-etc" value="${scope ? scope.financials.capEx.etc : 0}">
+                        </div>
+                    </div>
+
+                    <div class="contrib-section-title" style="margin-top:12px;">OpEx Operational Ledgers</div>
+                    <div class="contrib-form-row">
+                        <div class="contrib-form-group">
+                            <label>OpEx Plan ($)</label>
+                            <input type="number" id="form-scope-opex-plan" value="${scope ? scope.financials.opEx.plan : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>OpEx Actual ($)</label>
+                            <input type="number" id="form-scope-opex-actual" value="${scope ? scope.financials.opEx.actual : 0}">
+                        </div>
+                        <div class="contrib-form-group">
+                            <label>OpEx ETC ($)</label>
+                            <input type="number" id="form-scope-opex-etc" value="${scope ? scope.financials.opEx.etc : 0}">
+                        </div>
+                    </div>
+                `;
+            }
+
+            let editActions = "";
+            if (isEdit) {
+                editActions = `
+                    <div class="modal-action-bar">
+                        <button class="btn btn-primary" id="edit-save-btn">Save Changes</button>
+                        <button class="btn btn-secondary" id="edit-delete-btn" style="border-color:var(--color-danger); color:var(--color-danger); margin-right:auto; display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">delete_forever</span> Delete Permanent
+                        </button>
+                        <button class="btn btn-secondary" id="edit-cancel-btn">Cancel</button>
+                    </div>
+                `;
+            } else {
+                editActions = `
+                    <div class="modal-action-bar">
+                        <button class="btn btn-primary" id="add-save-btn">Create ${type.toUpperCase()}</button>
+                        <button class="btn btn-secondary" id="add-cancel-btn">Cancel</button>
+                    </div>
+                `;
+            }
+
+            modalBody.innerHTML = `<div style="display:flex; flex-direction:column; width:100%; gap:2px;">` + formHtml + editActions + `</div>`;
+
+            if (isEdit) {
+                const saveBtn = document.getElementById("edit-save-btn");
+                const deleteBtn = document.getElementById("edit-delete-btn");
+                const cancelBtn = document.getElementById("edit-cancel-btn");
+
+                const recordName = type === 'okr' ? state.strategy.objectives.find(o => o.id === id).title :
+                                   type === 'benefit' ? state.benefits.find(b => b.id === id).name :
+                                   state.scopes.find(s => s.id === id).name;
+
+                if (cancelBtn) cancelBtn.onclick = () => this.openContributionInspector(type, id, state, "inspect");
+
+                if (deleteBtn) {
+                    deleteBtn.onclick = () => {
+                        store.commitTransaction(`Permanently Delete ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
+                            if (type === 'okr') {
+                                s.strategy.objectives = s.strategy.objectives.filter(o => o.id !== id);
+                                s.benefits.filter(b => b.alignedOkrId === id).forEach(b => b.alignedOkrId = '');
+                            } else if (type === 'benefit') {
+                                s.benefits = s.benefits.filter(b => b.id !== id);
+                            } else if (type === 'scope') {
+                                s.scopes = s.scopes.filter(sc => sc.id !== id);
+                                s.tasks = s.tasks.filter(t => t.scopeId !== id);
+                                s.benefits.forEach(b => {
+                                    b.scopeDependencies = b.scopeDependencies.filter(sid => sid !== id);
+                                    if (b.contributionWeights && b.contributionWeights[id]) delete b.contributionWeights[id];
+                                });
+                            }
+                        });
+                        modal.classList.add("hidden");
+                        this.render(store.state);
+                    };
+                }
+
+                if (saveBtn) {
+                    saveBtn.onclick = () => {
+                        store.commitTransaction(`Edit ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
+                            if (type === 'okr') {
+                                const okr = s.strategy.objectives.find(o => o.id === id);
+                                if (okr) {
+                                    okr.title = document.getElementById("form-okr-title").value;
+                                    okr.metric = document.getElementById("form-okr-metric").value;
+                                    okr.target = Number(document.getElementById("form-okr-target").value);
+                                    okr.unit = document.getElementById("form-okr-unit").value;
+                                }
+                            } else if (type === 'benefit') {
+                                const ben = s.benefits.find(b => b.id === id);
+                                if (ben) {
+                                    ben.name = document.getElementById("form-ben-name").value;
+                                    ben.isDisbenefit = document.getElementById("form-ben-disbenefit").value === "true";
+                                    ben.alignedOkrId = document.getElementById("form-ben-okr").value;
+                                    ben.metric.name = document.getElementById("form-ben-metric-name").value;
+                                    ben.metric.baseline = Number(document.getElementById("form-ben-baseline").value);
+                                    ben.metric.target = Number(document.getElementById("form-ben-target").value);
+                                    ben.metric.unit = document.getElementById("form-ben-unit").value;
+                                    ben.owner = document.getElementById("form-ben-owner").value;
+                                    ben.realizationTimeline.startOffsetMonths = Number(document.getElementById("form-ben-lag-start").value);
+                                    ben.realizationTimeline.durationMonths = Number(document.getElementById("form-ben-lag-duration").value);
+                                    
+                                    const checkedScopes = Array.from(document.querySelectorAll(".form-ben-scope-checkbox:checked")).map(cb => cb.value);
+                                    ben.scopeDependencies = checkedScopes;
+                                    
+                                    if (!ben.contributionWeights) ben.contributionWeights = {};
+                                    checkedScopes.forEach(sid => {
+                                        if (!ben.contributionWeights[sid]) {
+                                            ben.contributionWeights[sid] = Math.round(100 / checkedScopes.length);
+                                        }
+                                    });
+                                }
+                            } else if (type === 'scope') {
+                                const scope = s.scopes.find(sc => sc.id === id);
+                                if (scope) {
+                                    scope.name = document.getElementById("form-scope-name").value;
+                                    scope.description = document.getElementById("form-scope-desc").value;
+                                    scope.methodology = document.getElementById("form-scope-methodology").value;
+                                    scope.status = document.getElementById("form-scope-status").value;
+                                    scope.expectedValue = Number(document.getElementById("form-scope-value").value);
+                                    scope.executionRisk = Number(document.getElementById("form-scope-risk").value);
+                                    scope.fteAllocations = Number(document.getElementById("form-scope-fte").value);
+                                    scope.financials.capEx.plan = Number(document.getElementById("form-scope-capex-plan").value);
+                                    scope.financials.capEx.actual = Number(document.getElementById("form-scope-capex-actual").value);
+                                    scope.financials.capEx.etc = Number(document.getElementById("form-scope-capex-etc").value);
+                                    scope.financials.opEx.plan = Number(document.getElementById("form-scope-opex-plan").value);
+                                    scope.financials.opEx.actual = Number(document.getElementById("form-scope-opex-actual").value);
+                                    scope.financials.opEx.etc = Number(document.getElementById("form-scope-opex-etc").value);
+                                }
+                            }
+                        });
+                        modal.classList.add("hidden");
+                        this.render(store.state);
+                    };
+                }
+            } else {
+                const saveBtn = document.getElementById("add-save-btn");
+                const cancelBtn = document.getElementById("add-cancel-btn");
+
+                if (cancelBtn) cancelBtn.onclick = () => modal.classList.add("hidden");
+
+                if (saveBtn) {
+                    saveBtn.onclick = () => {
+                        const newId = type + "-" + Date.now();
+                        const recordTitle = type === 'okr' ? document.getElementById("form-okr-title").value :
+                                             type === 'benefit' ? document.getElementById("form-ben-name").value :
+                                             document.getElementById("form-scope-name").value;
+
+                        store.commitTransaction(`Create New ${type.toUpperCase()}: "${recordTitle}"`, "User Action", (s) => {
+                            if (type === 'okr') {
+                                s.strategy.objectives.push({
+                                    id: newId,
+                                    title: document.getElementById("form-okr-title").value,
+                                    metric: document.getElementById("form-okr-metric").value,
+                                    target: Number(document.getElementById("form-okr-target").value),
+                                    current: 0,
+                                    unit: document.getElementById("form-okr-unit").value
+                                });
+                            } else if (type === 'benefit') {
+                                const checkedScopes = Array.from(document.querySelectorAll(".form-ben-scope-checkbox:checked")).map(cb => cb.value);
+                                const weights = {};
+                                checkedScopes.forEach(sid => {
+                                    weights[sid] = Math.round(100 / checkedScopes.length);
+                                });
+                                s.benefits.push({
+                                    id: newId,
+                                    name: document.getElementById("form-ben-name").value,
+                                    isDisbenefit: document.getElementById("form-ben-disbenefit").value === "true",
+                                    alignedOkrId: document.getElementById("form-ben-okr").value,
+                                    metric: {
+                                        name: document.getElementById("form-ben-metric-name").value,
+                                        baseline: Number(document.getElementById("form-ben-baseline").value),
+                                        target: Number(document.getElementById("form-ben-target").value),
+                                        current: Number(document.getElementById("form-ben-baseline").value),
+                                        unit: document.getElementById("form-ben-unit").value
+                                    },
+                                    owner: document.getElementById("form-ben-owner").value,
+                                    realizationTimeline: {
+                                        startOffsetMonths: Number(document.getElementById("form-ben-lag-start").value),
+                                        durationMonths: Number(document.getElementById("form-ben-lag-duration").value),
+                                        currentMonth: 0
+                                    },
+                                    scopeDependencies: checkedScopes,
+                                    contributionWeights: weights
+                                });
+                            } else if (type === 'scope') {
+                                const newScope = {
+                                    id: newId,
+                                    name: document.getElementById("form-scope-name").value,
+                                    description: document.getElementById("form-scope-desc").value,
+                                    methodology: document.getElementById("form-scope-methodology").value,
+                                    status: document.getElementById("form-scope-status").value,
+                                    expectedValue: Number(document.getElementById("form-scope-value").value),
+                                    executionRisk: Number(document.getElementById("form-scope-risk").value),
+                                    fteAllocations: Number(document.getElementById("form-scope-fte").value),
+                                    financials: {
+                                        capEx: {
+                                            plan: Number(document.getElementById("form-scope-capex-plan").value),
+                                            actual: Number(document.getElementById("form-scope-capex-actual").value),
+                                            etc: Number(document.getElementById("form-scope-capex-etc").value)
+                                        },
+                                        opEx: {
+                                            plan: Number(document.getElementById("form-scope-opex-plan").value),
+                                            actual: Number(document.getElementById("form-scope-opex-actual").value),
+                                            etc: Number(document.getElementById("form-scope-opex-etc").value)
+                                        }
+                                    },
+                                    progress: 0
+                                };
+                                s.scopes.push(newScope);
+                                s.scenario.includedProjectIds.push(newId);
+                                s.scenario.scheduleOffsets[newId] = 0;
+                            }
+                        });
+                        modal.classList.add("hidden");
+                        this.render(store.state);
+                    };
+                }
+            }
         }
-
-        modalBody.innerHTML = headerHtml + bodyHtml;
     }
 }
 

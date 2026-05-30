@@ -15,7 +15,7 @@ class GanttView {
 
         const level = state.scenario.activeHierarchyLevel || "enterprise";
         const activeProjectIds = state.scenario.includedProjectIds;
-        let activeScopes = state.scopes.filter(s => activeProjectIds.includes(s.id));
+        let activeScopes = state.scopes.filter(s => !s.isArchived && activeProjectIds.includes(s.id));
 
         if (level === "program") {
             activeScopes = activeScopes.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
@@ -145,7 +145,7 @@ class GanttView {
                 
                 // Redraw horizontal timeline bars
                 const level = state.scenario.activeHierarchyLevel || "enterprise";
-                let activeScopes = state.scopes.filter(s => state.scenario.includedProjectIds.includes(s.id));
+                let activeScopes = state.scopes.filter(s => !s.isArchived && state.scenario.includedProjectIds.includes(s.id));
                 if (level === "program") {
                     activeScopes = activeScopes.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
                 } else if (level === "project") {

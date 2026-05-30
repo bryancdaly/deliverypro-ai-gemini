@@ -27,6 +27,7 @@ class OptimizationView {
         let totalActiveFte = 0;
 
         state.scopes.forEach(scope => {
+            if (scope.isArchived) return;
             if (!isScopeInHierarchy(scope.id)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             if (isIncluded && scope.status !== "Proposed") {
@@ -111,7 +112,7 @@ class OptimizationView {
                         <h3>Active Investment Mix Scopes</h3>
                         <div class="strategy-list" style="max-height: 380px;">
                             ${state.scopes.map(scope => {
-                                if (!isScopeInHierarchy(scope.id)) return '';
+                                if (scope.isArchived || !isScopeInHierarchy(scope.id)) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
                                 const cost = scope.financials.capEx.plan + scope.financials.opEx.plan;
                                 return `
@@ -218,6 +219,7 @@ class OptimizationView {
         };
 
         state.scopes.forEach(scope => {
+            if (scope.isArchived) return;
             if (!isScopeInHierarchy(scope.id)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             const x = getX(scope.executionRisk);
@@ -324,7 +326,7 @@ class OptimizationView {
                         if (level === "project") return ["scope-route-optimization"].includes(scopeId);
                         return true;
                     };
-                    let availableScopes = [...state.scopes].filter(s => s.status !== "Proposed" && isScopeInHierarchy(s.id));
+                    let availableScopes = [...state.scopes].filter(s => !s.isArchived && s.status !== "Proposed" && isScopeInHierarchy(s.id));
                     
                     // Sort by expected value efficiency (expectedValue / CapEx Cost)
                     availableScopes.sort((a,b) => {
