@@ -197,6 +197,14 @@ class CopilotView {
                     this.testStatus.textContent = `Direct API Connection failed: ${e.message}`;
                     this.testStatus.className = "test-result error";
                 }
+        // Reset Portfolio Sandbox Data
+        const resetBtn = document.getElementById("reset-portfolio-btn");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => {
+                if (confirm("Are you sure you want to reset all portfolio adjustments, custom projects, task completions, and audit logs back to demo defaults? This action cannot be undone.")) {
+                    localStorage.removeItem("dp_portfolio_state");
+                    window.location.reload();
+                }
             });
         }
     }

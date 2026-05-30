@@ -235,6 +235,16 @@ class DeliveryProStore {
             auditLog: []
         };
 
+        // Load persisted state from LocalStorage if available
+        try {
+            const savedState = localStorage.getItem("dp_portfolio_state");
+            if (savedState) {
+                this.state = JSON.parse(savedState);
+            }
+        } catch(e) {
+            console.error("Failed to restore portfolio state from LocalStorage, using defaults:", e);
+        }
+
         // UI subscribers
         this.subscribers = {};
 
@@ -404,6 +414,17 @@ class DeliveryProStore {
 
         if (notify) {
             this.notifySubscribers();
+        }
+
+        // Persist state in LocalStorage after every recalculation or update
+        this.saveStateToLocalStorage();
+    }
+
+    saveStateToLocalStorage() {
+        try {
+            localStorage.setItem("dp_portfolio_state", JSON.stringify(this.state));
+        } catch(e) {
+            console.error("Failed to persist portfolio state in LocalStorage:", e);
         }
     }
 
