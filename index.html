@@ -98,11 +98,48 @@
                     <p id="current-view-desc">Top-down strategic cascading alignment and line-of-sight tracking</p>
                 </div>
                 <div class="top-bar-actions">
-                    <!-- Active Node Badge -->
-                    <div id="active-hierarchy-badge" class="hierarchy-badge">
-                        <span class="material-symbols-outlined">business</span>
-                        <span id="active-node-name">Global Corp</span>
+                    <!-- Hierarchy Level Selector -->
+                    <div id="hierarchy-selector-container" class="dropdown-container">
+                        <div id="active-hierarchy-badge" class="hierarchy-badge">
+                            <span class="material-symbols-outlined" id="active-hierarchy-icon">business</span>
+                            <div class="hierarchy-info">
+                                <span class="hierarchy-lbl">Hierarchy Level</span>
+                                <span id="active-node-name">Enterprise (Global Corp)</span>
+                            </div>
+                            <span class="material-symbols-outlined dropdown-arrow">arrow_drop_down</span>
+                        </div>
+                        <div id="hierarchy-dropdown" class="dropdown-menu">
+                            <div class="dropdown-item active-item" data-level="enterprise" data-icon="business">
+                                <span class="material-symbols-outlined">business</span>
+                                <div class="item-text">
+                                    <h4>Enterprise Scope</h4>
+                                    <small>Global Corp – Strategy & Boardroom</small>
+                                </div>
+                            </div>
+                            <div class="dropdown-item" data-level="portfolio" data-icon="donut_large">
+                                <span class="material-symbols-outlined">donut_large</span>
+                                <div class="item-text">
+                                    <h4>Portfolio Scope</h4>
+                                    <small>Sustainable Agriculture Portfolio</small>
+                                </div>
+                            </div>
+                            <div class="dropdown-item" data-level="program" data-icon="account_tree">
+                                <span class="material-symbols-outlined">account_tree</span>
+                                <div class="item-text">
+                                    <h4>Program Scope</h4>
+                                    <small>Logistics & Fleet Modernization</small>
+                                </div>
+                            </div>
+                            <div class="dropdown-item" data-level="project" data-icon="article">
+                                <span class="material-symbols-outlined">article</span>
+                                <div class="item-text">
+                                    <h4>Project Scope</h4>
+                                    <small>Route-Optimization AI Integration</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <!-- Copilot Toggle -->
                     <button id="copilot-toggle" class="btn btn-copilot">
                         <span class="material-symbols-outlined">smart_toy</span>
@@ -212,6 +249,21 @@
 
         <!-- Notification Toasts Container -->
         <div id="toast-container"></div>
+
+        <!-- Interactive Strategic Contribution Inspector Modal -->
+        <div id="contribution-modal" class="modal-overlay hidden">
+            <div class="modal-card" style="width: 580px; max-width: 95vw;">
+                <div class="modal-header">
+                    <h2 id="contrib-modal-title">Strategic Contribution Inspector</h2>
+                    <button id="contrib-modal-close" class="icon-btn" title="Close Modal">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="contrib-modal-body" style="gap: 16px; padding: 24px;">
+                    <!-- Injected dynamically by strategyView.js -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Application Code Modules -->

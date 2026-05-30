@@ -63,11 +63,16 @@ class KanbanView {
             }
         });
 
-        // Filter and inject tasks based on included scope IDs
+        // Filter and inject tasks based on included scope IDs & active hierarchy level
         const includedScopeIds = store.state.scenario.includedProjectIds;
+        const level = store.state.scenario.activeHierarchyLevel || "enterprise";
 
         tasks.forEach(task => {
             if (!includedScopeIds.includes(task.scopeId)) return; // Exclude non-active portfolio tasks
+
+            // Active hierarchy level filtering
+            if (level === "program" && !["scope-route-optimization", "scope-transport-fleet"].includes(task.scopeId)) return;
+            if (level === "project" && !["scope-route-optimization"].includes(task.scopeId)) return;
 
             const container = columns[task.status];
             if (container) {

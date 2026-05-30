@@ -13,8 +13,15 @@ class GanttView {
         const container = document.getElementById(this.containerId);
         if (!container) return;
 
+        const level = state.scenario.activeHierarchyLevel || "enterprise";
         const activeProjectIds = state.scenario.includedProjectIds;
-        const activeScopes = state.scopes.filter(s => activeProjectIds.includes(s.id));
+        let activeScopes = state.scopes.filter(s => activeProjectIds.includes(s.id));
+
+        if (level === "program") {
+            activeScopes = activeScopes.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
+        } else if (level === "project") {
+            activeScopes = activeScopes.filter(s => ["scope-route-optimization"].includes(s.id));
+        }
 
         // Render gantt layout
         container.innerHTML = `
@@ -25,7 +32,7 @@ class GanttView {
                 </div>
 
                 <!-- Simulation delay slider -->
-                <div class="glass-panel realization-slider-panel" style="margin-top: 0;">
+                <div class="glass-panel realization-slider-panel" style="margin-top: 0; display: ${level === 'project' ? 'none' : 'flex'}">
                     <span class="material-symbols-outlined icon-btn" style="color: var(--color-warning)">warning</span>
                     <div class="r-slider-desc">
                         <h4>AI Dependency Bottleneck Simulator</h4>
@@ -137,7 +144,13 @@ class GanttView {
                 store.recalculateAllMetrics(false);
                 
                 // Redraw horizontal timeline bars
-                const activeScopes = state.scopes.filter(s => state.scenario.includedProjectIds.includes(s.id));
+                const level = state.scenario.activeHierarchyLevel || "enterprise";
+                let activeScopes = state.scopes.filter(s => state.scenario.includedProjectIds.includes(s.id));
+                if (level === "program") {
+                    activeScopes = activeScopes.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
+                } else if (level === "project") {
+                    activeScopes = activeScopes.filter(s => ["scope-route-optimization"].includes(s.id));
+                }
                 const ganttGrid = document.querySelector(".gantt-timeline-grid");
                 if (ganttGrid) {
                     ganttGrid.innerHTML = activeScopes.map(s => {

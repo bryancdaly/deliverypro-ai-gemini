@@ -27,8 +27,14 @@ class ResourceView {
                         const isOverloaded = r.allocated > r.maxCapacity;
                         
                         // Get active tasks for this resource
+                        const level = state.scenario.activeHierarchyLevel || "enterprise";
                         const activeProjectIds = state.scenario.includedProjectIds;
-                        const resourceTasks = state.tasks.filter(t => t.assignee === r.name && t.status !== 'done' && activeProjectIds.includes(t.scopeId));
+                        const resourceTasks = state.tasks.filter(t => {
+                            if (t.assignee !== r.name || t.status === 'done' || !activeProjectIds.includes(t.scopeId)) return false;
+                            if (level === "program" && !["scope-route-optimization", "scope-transport-fleet"].includes(t.scopeId)) return false;
+                            if (level === "project" && !["scope-route-optimization"].includes(t.scopeId)) return false;
+                            return true;
+                        });
 
                         return `
                             <div class="glass-panel" style="display:flex; flex-direction:column; gap:16px; border-color: ${isOverloaded ? 'var(--color-danger)' : 'var(--glass-border)'}; background: ${isOverloaded ? 'hsla(350,85%,55%,0.02)' : 'var(--bg-glass)'};">

@@ -48,7 +48,11 @@ class DeliveryProStore {
                     },
                     owner: "Sarah Connor (Logistics Director)",
                     realizationTimeline: { startOffsetMonths: 3, durationMonths: 12, currentMonth: 0 },
-                    scopeDependencies: ["scope-route-optimization", "scope-transport-fleet"]
+                    scopeDependencies: ["scope-route-optimization", "scope-transport-fleet"],
+                    contributionWeights: {
+                        "scope-route-optimization": 40, // 40% contribution share
+                        "scope-transport-fleet": 60  // 60% contribution share
+                    }
                 },
                 {
                     id: "ben-ops-savings",
@@ -64,7 +68,10 @@ class DeliveryProStore {
                     },
                     owner: "Marcus Aurelius (Chief Ops Officer)",
                     realizationTimeline: { startOffsetMonths: 6, durationMonths: 18, currentMonth: 0 },
-                    scopeDependencies: ["scope-route-optimization"]
+                    scopeDependencies: ["scope-route-optimization"],
+                    contributionWeights: {
+                        "scope-route-optimization": 100 // 100% contribution share
+                    }
                 },
                 {
                     id: "disben-safety-friction",
@@ -80,7 +87,10 @@ class DeliveryProStore {
                     },
                     owner: "John Doe (Warehouse Safety Manager)",
                     realizationTimeline: { startOffsetMonths: 0, durationMonths: 1, currentMonth: 0 },
-                    scopeDependencies: ["scope-safety-module"]
+                    scopeDependencies: ["scope-safety-module"],
+                    contributionWeights: {
+                        "scope-safety-module": 100 // 100% contribution share
+                    }
                 }
             ],
             
@@ -210,7 +220,8 @@ class DeliveryProStore {
                     "scope-transport-fleet": 0,
                     "scope-safety-module": 0
                 },
-                realizationMonthSlider: 0 // Staggered timeline months (0 - 36)
+                realizationMonthSlider: 0, // Staggered timeline months (0 - 36)
+                activeHierarchyLevel: "enterprise" // "enterprise" | "portfolio" | "program" | "project"
             },
 
             // Live Scrolling Pulse Activity Feed Logs
@@ -286,9 +297,16 @@ class DeliveryProStore {
         s.resources.forEach(r => {
             r.allocated = 0;
         });
+        const level = s.scenario.activeHierarchyLevel || "enterprise";
+        const isScopeInHierarchy = (scopeId) => {
+            if (level === "enterprise" || level === "portfolio") return true;
+            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
+            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
+            return true;
+        };
         s.scopes.forEach(scope => {
-            // If project is active/included in current scenario
-            if (s.scenario.includedProjectIds.includes(scope.id) && scope.status !== "Proposed") {
+            // If project is active/included in current scenario and is in scope for active hierarchy level
+            if (s.scenario.includedProjectIds.includes(scope.id) && scope.status !== "Proposed" && isScopeInHierarchy(scope.id)) {
                 const scopeTasks = s.tasks.filter(t => t.scopeId === scope.id && t.status !== "done");
                 scopeTasks.forEach(task => {
                     const resource = s.resources.find(res => res.name === task.assignee);

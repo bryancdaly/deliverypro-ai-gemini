@@ -367,6 +367,309 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--accent-indigo);
 }
 
+/* Custom Hierarchy Scope Selector Dropdown */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.hierarchy-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.25;
+}
+
+.hierarchy-lbl {
+    font-size: 8px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+#active-node-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.dropdown-arrow {
+    font-size: 18px;
+    color: var(--color-text-muted);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-container.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 320px;
+    background: var(--bg-panel);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--glass-shadow), 0 10px 30px rgba(0,0,0,0.08);
+    backdrop-filter: var(--backdrop-blur);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-container.open .dropdown-menu {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: var(--transition-quick);
+    border: 1px solid transparent;
+    color: var(--color-text-secondary);
+}
+
+.dropdown-item span.material-symbols-outlined {
+    font-size: 20px;
+    color: var(--color-text-secondary);
+    transition: var(--transition-quick);
+}
+
+.dropdown-item:hover {
+    background: hsla(250, 85%, 58%, 0.03);
+    color: var(--color-text-primary);
+    border-color: var(--glass-border);
+}
+
+.dropdown-item.active-item {
+    background: hsla(250, 95%, 68%, 0.08);
+    color: var(--color-text-primary);
+    border-color: hsla(250, 95%, 68%, 0.18);
+    box-shadow: inset 0 0 8px hsla(250, 95%, 68%, 0.02);
+}
+
+.dropdown-item.active-item span.material-symbols-outlined {
+    color: var(--accent-indigo);
+}
+
+.dropdown-item .item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+}
+
+.dropdown-item h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.dropdown-item small {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+
+/* Sidebar navigation low-relevance fading */
+.nav-item.low-relevance {
+    opacity: 0.42;
+    border-style: dashed;
+    border-color: transparent;
+}
+.nav-item.low-relevance:hover {
+    opacity: 0.9;
+    border-color: var(--glass-border);
+    border-style: solid;
+}
+
+/* Scope Banner at the top of active views */
+.scope-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: hsla(250, 85%, 58%, 0.03);
+    border: 1px solid hsla(250, 85%, 58%, 0.1);
+    border-radius: var(--border-radius-md);
+    padding: 12px 20px;
+    margin-bottom: 24px;
+    animation: fadeIn 0.4s ease;
+}
+
+.scope-banner-icon {
+    font-size: 24px;
+    color: var(--accent-indigo);
+    background: hsla(250, 85%, 58%, 0.06);
+    border-radius: 50%;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scope-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.scope-banner-text h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.scope-banner-text p {
+    font-size: 11.5px;
+    color: var(--color-text-secondary);
+}
+
+/* Strategic Contribution Inspector Modal Styles */
+.contrib-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 16px;
+    margin-bottom: 8px;
+}
+
+.contrib-header-info h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.contrib-badge {
+    align-self: flex-start;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+.contrib-badge.okr {
+    background: hsla(200, 85%, 42%, 0.1);
+    color: var(--color-info);
+}
+.contrib-badge.ben {
+    background: hsla(165, 85%, 36%, 0.1);
+    color: var(--color-success);
+}
+.contrib-badge.disben {
+    background: hsla(15, 85%, 48%, 0.1);
+    color: var(--color-warning);
+}
+.contrib-badge.strat {
+    background: hsla(250, 85%, 58%, 0.1);
+    color: var(--accent-indigo);
+}
+
+.contrib-section-title {
+    font-family: Outfit;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-secondary);
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+.contrib-project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.contrib-project-card {
+    background: hsla(220, 20%, 30%, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: var(--transition-quick);
+}
+
+.contrib-project-card:hover {
+    border-color: var(--accent-indigo-glow);
+    background: hsla(250, 95%, 68%, 0.015);
+}
+
+.contrib-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.contrib-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.contrib-status-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.contrib-status-badge.realizing-green {
+    background: hsla(165, 85%, 36%, 0.1);
+    color: var(--color-success);
+}
+
+.contrib-status-badge.maturing-amber {
+    background: hsla(15, 85%, 48%, 0.1);
+    color: var(--color-warning);
+}
+
+.contrib-status-badge.delayed-red {
+    background: hsla(350, 75%, 46%, 0.1);
+    color: var(--color-danger);
+}
+
+.contrib-status-badge.proposed-grey {
+    background: hsla(220, 10%, 58%, 0.1);
+    color: var(--color-text-secondary);
+}
+
+.contrib-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.strategy-node-card {
+    cursor: pointer;
+    transition: var(--transition-quick);
+}
+.strategy-node-card:hover {
+    border-color: var(--accent-indigo);
+    box-shadow: 0 4px 15px rgba(250, 85, 58, 0.08);
+    transform: translateY(-1px);
+}
+
 /* Main Workspace Body */
 #view-content {
     flex-grow: 1;

@@ -13,11 +13,21 @@ class OptimizationView {
         const container = document.getElementById(this.containerId);
         if (!container) return;
 
+        const level = state.scenario.activeHierarchyLevel || "enterprise";
+
+        const isScopeInHierarchy = (scopeId) => {
+            if (level === "enterprise" || level === "portfolio") return true;
+            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
+            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
+            return true;
+        };
+
         // Calculate active budget commitments
         let totalActiveCost = 0;
         let totalActiveFte = 0;
 
         state.scopes.forEach(scope => {
+            if (!isScopeInHierarchy(scope.id)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             if (isIncluded && scope.status !== "Proposed") {
                 totalActiveCost += scope.financials.capEx.plan + scope.financials.opEx.plan;
@@ -27,6 +37,28 @@ class OptimizationView {
 
         const budgetOverload = totalActiveCost > state.scenario.budgetCap;
         const fteOverload = totalActiveFte > state.scenario.fteCap;
+
+        // Define slider bounds dynamically based on active hierarchy level
+        const bounds = {
+            enterprise: {
+                budgetMin: 500000, budgetMax: 2500000, budgetLabelMin: "$500k", budgetLabelMax: "$2.5M", budgetStep: 50000,
+                fteMin: 5, fteMax: 25, fteLabelMin: "5 FTEs", fteLabelMax: "25 FTEs"
+            },
+            portfolio: {
+                budgetMin: 250000, budgetMax: 1500000, budgetLabelMin: "$250k", budgetLabelMax: "$1.5M", budgetStep: 50000,
+                fteMin: 3, fteMax: 18, fteLabelMin: "3 FTEs", fteLabelMax: "18 FTEs"
+            },
+            program: {
+                budgetMin: 100000, budgetMax: 750000, budgetLabelMin: "$100k", budgetLabelMax: "$750k", budgetStep: 25000,
+                fteMin: 2, fteMax: 12, fteLabelMin: "2 FTEs", fteLabelMax: "12 FTEs"
+            },
+            project: {
+                budgetMin: 50000, budgetMax: 400000, budgetLabelMin: "$50k", budgetLabelMax: "$400k", budgetStep: 10000,
+                fteMin: 1, fteMax: 6, fteLabelMin: "1 FTE", fteLabelMax: "6 FTEs"
+            }
+        };
+
+        const currentBounds = bounds[level] || bounds.enterprise;
 
         container.innerHTML = `
             <div class="optimizer-workspace">
@@ -39,21 +71,21 @@ class OptimizationView {
                         <div class="form-group">
                             <label>Scenario Budget Limit Cap</label>
                             <div class="priority-slider-header">
-                                <span>$500k</span>
+                                <span>${currentBounds.budgetLabelMin}</span>
                                 <span id="opt-budget-cap-val" style="color: var(--accent-indigo)">$${state.scenario.budgetCap.toLocaleString()} USD</span>
-                                <span>$2.5M</span>
+                                <span>${currentBounds.budgetLabelMax}</span>
                             </div>
-                            <input type="range" id="opt-budget-cap" min="500000" max="2500000" step="50000" value="${state.scenario.budgetCap}" style="accent-color: var(--accent-indigo);">
+                            <input type="range" id="opt-budget-cap" min="${currentBounds.budgetMin}" max="${currentBounds.budgetMax}" step="${currentBounds.budgetStep}" value="${state.scenario.budgetCap}" style="accent-color: var(--accent-indigo);">
                         </div>
 
                         <div class="form-group">
                             <label>Scenario FTE Team Cap</label>
                             <div class="priority-slider-header">
-                                <span>5 FTEs</span>
+                                <span>${currentBounds.fteLabelMin}</span>
                                 <span id="opt-fte-cap-val" style="color: var(--accent-indigo)">${state.scenario.fteCap} FTEs</span>
-                                <span>25 FTEs</span>
+                                <span>${currentBounds.fteLabelMax}</span>
                             </div>
-                            <input type="range" id="opt-fte-cap" min="5" max="25" step="1" value="${state.scenario.fteCap}" style="accent-color: var(--accent-indigo);">
+                            <input type="range" id="opt-fte-cap" min="${currentBounds.fteMin}" max="${currentBounds.fteMax}" step="1" value="${state.scenario.fteCap}" style="accent-color: var(--accent-indigo);">
                         </div>
 
                         <div class="cons-indicators">
@@ -79,6 +111,7 @@ class OptimizationView {
                         <h3>Active Investment Mix Scopes</h3>
                         <div class="strategy-list" style="max-height: 380px;">
                             ${state.scopes.map(scope => {
+                                if (!isScopeInHierarchy(scope.id)) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
                                 const cost = scope.financials.capEx.plan + scope.financials.opEx.plan;
                                 return `
@@ -176,7 +209,16 @@ class OptimizationView {
         svg.appendChild(curve);
 
         // Plot dots for each scope project
+        const level = state.scenario.activeHierarchyLevel || "enterprise";
+        const isScopeInHierarchy = (scopeId) => {
+            if (level === "enterprise" || level === "portfolio") return true;
+            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
+            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
+            return true;
+        };
+
         state.scopes.forEach(scope => {
+            if (!isScopeInHierarchy(scope.id)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             const x = getX(scope.executionRisk);
             const y = getY(scope.expectedValue);
@@ -275,7 +317,14 @@ class OptimizationView {
                     const fteLimit = state.scenario.fteCap;
 
                     // Simulated Knapsack Solver maximizing Expected Strategic Value under cost & FTE constraints
-                    let availableScopes = [...state.scopes].filter(s => s.status !== "Proposed");
+                    const isScopeInHierarchy = (scopeId) => {
+                        const level = state.scenario.activeHierarchyLevel || "enterprise";
+                        if (level === "enterprise" || level === "portfolio") return true;
+                        if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
+                        if (level === "project") return ["scope-route-optimization"].includes(scopeId);
+                        return true;
+                    };
+                    let availableScopes = [...state.scopes].filter(s => s.status !== "Proposed" && isScopeInHierarchy(s.id));
                     
                     // Sort by expected value efficiency (expectedValue / CapEx Cost)
                     availableScopes.sort((a,b) => {
