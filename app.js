@@ -44,8 +44,14 @@ class DeliveryProApp {
         // Subscribe to Store updates
         store.subscribe("app-router", (state) => this.renderActiveView(state));
         
-        // Initial render
-        store.recalculateAllMetrics(true); // Recalculates and fires subscriber notifications
+        // Listen for hash changes
+        window.addEventListener("hashchange", () => this.handleHashRoute());
+
+        // Recalculate metrics silently
+        store.recalculateAllMetrics(false);
+        
+        // Parse and render target hash view
+        this.handleHashRoute();
         
         // Populate initial Portfolio Pulse Feed items in UI
         this.populateInitialPulseEvents();
@@ -58,19 +64,8 @@ class DeliveryProApp {
         navItems.forEach(item => {
             item.addEventListener("click", (e) => {
                 e.preventDefault();
-                
-                // Set active sidebar item styling
-                navItems.forEach(ni => ni.classList.remove("active"));
-                item.classList.add("active");
-                
                 const view = item.dataset.view;
-                this.activeView = view;
-
-                // Adjust Header text
-                this.updateHeaderDetails(view);
-
-                // Re-render
-                this.renderActiveView(store.state);
+                window.location.hash = view;
             });
         });
 
@@ -78,8 +73,7 @@ class DeliveryProApp {
         const activeNodeBtn = document.getElementById("active-hierarchy-badge");
         if (activeNodeBtn) {
             activeNodeBtn.addEventListener("click", () => {
-                const strategyNav = document.querySelector('[data-view="strategy"]');
-                if (strategyNav) strategyNav.click();
+                window.location.hash = "strategy";
             });
         }
 
@@ -132,6 +126,30 @@ class DeliveryProApp {
                 selectorContainer.classList.remove("open");
             });
         }
+    }
+
+    handleHashRoute() {
+        const hash = window.location.hash.replace("#", "");
+        const validViews = ["strategy", "intake", "optimizer", "finance", "kanban", "gantt", "resources", "synthesizer", "audit"];
+        
+        let targetView = "strategy";
+        if (hash && validViews.includes(hash)) {
+            targetView = hash;
+        }
+
+        // Set active sidebar item styling in UI
+        const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
+        navItems.forEach(item => {
+            if (item.dataset.view === targetView) {
+                item.classList.add("active");
+            } else {
+                item.classList.remove("active");
+            }
+        });
+
+        this.activeView = targetView;
+        this.updateHeaderDetails(targetView);
+        this.renderActiveView(store.state);
     }
 
     updateHeaderDetails(view) {

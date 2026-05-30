@@ -239,7 +239,14 @@ class DeliveryProStore {
         try {
             const savedState = localStorage.getItem("dp_portfolio_state");
             if (savedState) {
-                this.state = JSON.parse(savedState);
+                const parsed = JSON.parse(savedState);
+                // Ensure all vital arrays and properties are present before restoring
+                if (parsed && parsed.strategy && parsed.strategy.objectives && parsed.benefits && parsed.scopes && parsed.tasks && parsed.resources) {
+                    this.state = parsed;
+                } else {
+                    console.warn("Saved portfolio state is incomplete or outdated. Discarding to load fresh defaults.");
+                    localStorage.removeItem("dp_portfolio_state");
+                }
             }
         } catch(e) {
             console.error("Failed to restore portfolio state from LocalStorage, using defaults:", e);
