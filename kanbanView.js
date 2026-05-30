@@ -127,6 +127,7 @@ class KanbanView {
                 const taskId = card.dataset.id;
                 this.openTaskForm(taskId, store.state);
             });
+        });
 
         cards.forEach(card => {
             card.addEventListener("dragstart", (e) => {

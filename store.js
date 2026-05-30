@@ -240,8 +240,19 @@ class DeliveryProStore {
             const savedState = localStorage.getItem("dp_portfolio_state");
             if (savedState) {
                 const parsed = JSON.parse(savedState);
-                // Ensure all vital arrays and properties are present before restoring
-                if (parsed && parsed.strategy && parsed.strategy.objectives && parsed.benefits && parsed.scopes && parsed.tasks && parsed.resources) {
+                // Ensure all vital arrays and scenario properties are present before restoring
+                if (parsed && 
+                    parsed.strategy && 
+                    parsed.strategy.title &&
+                    parsed.strategy.objectives && 
+                    parsed.benefits && 
+                    parsed.scopes && 
+                    parsed.tasks && 
+                    parsed.resources && 
+                    parsed.scenario && 
+                    parsed.scenario.includedProjectIds && 
+                    parsed.scenario.realizationMonthSlider !== undefined) {
+                    
                     this.state = parsed;
                 } else {
                     console.warn("Saved portfolio state is incomplete or outdated. Discarding to load fresh defaults.");

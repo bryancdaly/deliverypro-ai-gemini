@@ -520,7 +520,6 @@ class DeliveryProApp {
         }
     }
 }
-}
 
 // Global initialization
 window.addEventListener("DOMContentLoaded", () => {
