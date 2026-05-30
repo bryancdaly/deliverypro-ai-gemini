@@ -138,12 +138,38 @@ class CopilotView {
                 const model = this.modelSelect.value;
 
                 if (!key) {
-                    this.testStatus.textContent = "API Key required.";
-                    this.testStatus.className = "test-result error";
+                    this.testStatus.textContent = "Testing Vercel Serverless Proxy Connection...";
+                    this.testStatus.className = "test-result";
+
+                    try {
+                        const response = await fetch("/api/copilot", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                prompt: "ping",
+                                state: store.state,
+                                model: model
+                            })
+                        });
+
+                        if (response.ok) {
+                            this.testStatus.textContent = "Serverless Proxy Connection Successful! Status: Green";
+                            this.testStatus.className = "test-result success";
+                        } else {
+                            const errData = await response.json().catch(() => ({}));
+                            const errMsg = errData.error || `HTTP ${response.status}`;
+                            throw new Error(errMsg);
+                        }
+                    } catch(e) {
+                        this.testStatus.textContent = `Serverless Proxy failed: ${e.message}`;
+                        this.testStatus.className = "test-result error";
+                    }
                     return;
                 }
 
-                this.testStatus.textContent = "Testing endpoint connection...";
+                this.testStatus.textContent = "Testing direct endpoint connection...";
                 this.testStatus.className = "test-result";
 
                 try {
@@ -162,13 +188,13 @@ class CopilotView {
                     });
 
                     if (response.ok) {
-                        this.testStatus.textContent = "API Connection Successful! Status: Green";
+                        this.testStatus.textContent = "Direct API Connection Successful! Status: Green";
                         this.testStatus.className = "test-result success";
                     } else {
                         throw new Error(`HTTP ${response.status}`);
                     }
                 } catch(e) {
-                    this.testStatus.textContent = `API Connection failed: ${e.message}`;
+                    this.testStatus.textContent = `Direct API Connection failed: ${e.message}`;
                     this.testStatus.className = "test-result error";
                 }
             });

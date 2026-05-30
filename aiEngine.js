@@ -38,7 +38,7 @@ class DeliveryProAIEngine {
     async sendMessage(prompt) {
         const activeState = store.state;
         
-        if (this.apiConfig.mode === "live" && this.apiConfig.apiKey) {
+        if (this.apiConfig.mode === "live") {
             try {
                 return await this.fetchOpenRouterResponse(prompt, activeState);
             } catch(e) {
@@ -61,6 +61,39 @@ class DeliveryProAIEngine {
     // OPENROUTER.AI API FETCH INTEGRATION
     // ==========================================================================
     async fetchOpenRouterResponse(prompt, state) {
+        // 1. Try Vercel Serverless API Proxy first
+        try {
+            const serverlessResponse = await fetch("/api/copilot", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    state: state,
+                    model: this.apiConfig.model
+                })
+            });
+
+            if (serverlessResponse.ok) {
+                const data = await serverlessResponse.json();
+                const aiMessage = data.choices[0].message.content;
+                return this.parseAiResponse(aiMessage);
+            } else if (serverlessResponse.status === 404) {
+                console.log("Vercel serverless API not detected (likely running locally). Falling back to direct client-side fetch.");
+            } else {
+                const errText = await serverlessResponse.text();
+                console.warn(`Vercel serverless API returned error: ${errText}. Falling back to direct client-side fetch.`);
+            }
+        } catch (e) {
+            console.log("Vercel serverless fetch failed. Falling back to direct client-side fetch:", e);
+        }
+
+        // 2. Direct client-side fetch fallback (uses LocalStorage key)
+        if (!this.apiConfig.apiKey) {
+            throw new Error("No API Key detected. Please configure your OpenRouter API Key in the settings.");
+        }
+
         // Build rich, systemic developer instructions
         const systemPrompt = `You are the expert AI PM Copilot for DeliveryPro.AI, an enterprise Strategic PPM tool.
 Your workspace state is passed below. You must reference actual projects, OKRs, benefits, and costs in your responses.
@@ -114,7 +147,10 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
 
         const data = await response.json();
         const aiMessage = data.choices[0].message.content;
+        return this.parseAiResponse(aiMessage);
+    }
 
+    parseAiResponse(aiMessage) {
         // Parse JSON proposal if present
         let parsedProposal = null;
         const jsonMatch = aiMessage.match(/```json\s*([\s\S]*?)\s*```/);
