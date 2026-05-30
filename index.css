@@ -346,25 +346,28 @@ h1, h2, h3, h4, h5, h6 {
 .hierarchy-badge {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
-    padding: 8px 14px;
+    gap: 10px;
+    background: #ffffff !important;
+    border: 1px solid rgba(220, 225, 235, 0.8) !important;
+    padding: 8px 16px;
     border-radius: 40px;
     font-size: 12px;
     font-weight: 600;
+    color: var(--color-text-primary) !important;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
     transition: var(--transition-quick);
 }
 
 .hierarchy-badge:hover {
-    border-color: var(--accent-indigo);
-    background: var(--bg-card-hover);
+    border-color: var(--accent-indigo) !important;
+    background: #f8f9fc !important;
+    box-shadow: 0 4px 16px rgba(250, 85, 58, 0.06) !important;
 }
 
 .hierarchy-badge span.material-symbols-outlined {
-    font-size: 16px;
-    color: var(--accent-indigo);
+    font-size: 18px;
+    color: var(--accent-indigo) !important;
 }
 
 /* Custom Hierarchy Scope Selector Dropdown */
@@ -409,16 +412,15 @@ h1, h2, h3, h4, h5, h6 {
     top: calc(100% + 8px);
     right: 0;
     width: 320px;
-    background: var(--bg-panel);
-    border: 1px solid var(--glass-border);
+    background: #ffffff !important;
+    border: 1px solid rgba(220, 225, 235, 0.9) !important;
     border-radius: var(--border-radius-lg);
-    box-shadow: var(--glass-shadow), 0 10px 30px rgba(0,0,0,0.08);
-    backdrop-filter: var(--backdrop-blur);
-    padding: 6px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12) !important;
+    padding: 8px;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    z-index: 100;
+    z-index: 9999 !important;
     opacity: 0;
     transform: translateY(-10px);
     pointer-events: none;
