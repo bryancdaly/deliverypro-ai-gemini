@@ -1060,12 +1060,13 @@ class StrategyView {
 
             else if (type === "okr") {
                 const okr = isEdit ? state.strategy.flatMap(s=>s.objectives).find(o => o.id === id) : null;
+                const alignedStrat = isEdit ? state.strategy.find(st => st.objectives.some(o => o.id === id)) : null;
                 formHtml = `
                     <div class="contrib-form-group">
                         <label>Aligned Enterprise Strategy</label>
                         <select id="form-okr-strat">
                             ${state.strategy.filter(s => !s.isArchived).map(s => `
-                                <option value="${s.id}">${s.title}</option>
+                                <option value="${s.id}" ${alignedStrat && alignedStrat.id === s.id ? 'selected' : ''}>${s.title}</option>
                             `).join('')}
                         </select>
                     </div>
@@ -1085,6 +1086,20 @@ class StrategyView {
                         <div class="contrib-form-group">
                             <label>Metric Unit</label>
                             <input type="text" id="form-okr-unit" value="${okr ? okr.unit : ''}" placeholder="e.g. %, $, pts">
+                        </div>
+                    </div>
+                    <div class="contrib-form-group" style="margin-top: 10px;">
+                        <label>Aligned Outcome Benefits Enabled</label>
+                        <div style="display:flex; flex-direction:column; gap:4px; max-height: 120px; overflow-y: auto; background: hsla(0,0%,100%,0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--glass-border);">
+                            ${state.benefits.filter(b => !b.isArchived).map(b => {
+                                const isChecked = okr && b.alignedOkrId === okr.id;
+                                return `
+                                    <label style="display:flex; align-items:center; gap:8px; font-size:11px; text-transform:none; color:var(--color-text-secondary); cursor:pointer;">
+                                        <input type="checkbox" class="form-okr-benefit-checkbox" value="${b.id}" ${isChecked ? 'checked' : ''} style="width:14px; height:14px;">
+                                        ${b.name}
+                                    </label>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -1248,6 +1263,20 @@ class StrategyView {
                             <input type="number" id="form-scope-opex-etc" value="${scope ? scope.financials.opEx.etc : 0}">
                         </div>
                     </div>
+                    <div class="contrib-form-group" style="margin-top: 12px;">
+                        <label>Aligned Business Outcome Benefits Enabled</label>
+                        <div style="display:flex; flex-direction:column; gap:4px; max-height: 120px; overflow-y: auto; background: hsla(0,0%,100%,0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--glass-border);">
+                            ${state.benefits.filter(b => !b.isArchived).map(b => {
+                                const isChecked = scope && b.scopeDependencies.includes(scope.id);
+                                return `
+                                    <label style="display:flex; align-items:center; gap:8px; font-size:11px; text-transform:none; color:var(--color-text-secondary); cursor:pointer;">
+                                        <input type="checkbox" class="form-scope-benefit-checkbox" value="${b.id}" ${isChecked ? 'checked' : ''} style="width:14px; height:14px;">
+                                        ${b.name}
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
                 `;
             }
 
@@ -1328,7 +1357,28 @@ class StrategyView {
                                     okr.metric = document.getElementById("form-okr-metric").value;
                                     okr.target = Number(document.getElementById("form-okr-target").value);
                                     okr.unit = document.getElementById("form-okr-unit").value;
-                                    // if strat changed, we would need to move it, but keeping it simple for now
+                                    
+                                    // Handle Strategy realignment
+                                    const newStratId = document.getElementById("form-okr-strat").value;
+                                    const oldStrat = s.strategy.find(st => st.objectives.some(o => o.id === id));
+                                    if (oldStrat && oldStrat.id !== newStratId) {
+                                        const okrObj = oldStrat.objectives.find(o => o.id === id);
+                                        oldStrat.objectives = oldStrat.objectives.filter(o => o.id !== id);
+                                        const newStrat = s.strategy.find(st => st.id === newStratId);
+                                        if (newStrat) {
+                                            newStrat.objectives.push(okrObj);
+                                        }
+                                    }
+
+                                    // Double-sided linkage CRUD with Benefits
+                                    const checkedBenIds = Array.from(document.querySelectorAll(".form-okr-benefit-checkbox:checked")).map(cb => cb.value);
+                                    s.benefits.forEach(b => {
+                                        if (checkedBenIds.includes(b.id)) {
+                                            b.alignedOkrId = id;
+                                        } else if (b.alignedOkrId === id) {
+                                            b.alignedOkrId = "";
+                                        }
+                                    });
                                 }
                             } else if (type === 'benefit') {
                                 const ben = s.benefits.find(b => b.id === id);
@@ -1372,6 +1422,26 @@ class StrategyView {
                                     scope.financials.opEx.plan = Number(document.getElementById("form-scope-opex-plan").value);
                                     scope.financials.opEx.actual = Number(document.getElementById("form-scope-opex-actual").value);
                                     scope.financials.opEx.etc = Number(document.getElementById("form-scope-opex-etc").value);
+
+                                    // Double-sided linkage CRUD with Benefits
+                                    const checkedBenIds = Array.from(document.querySelectorAll(".form-scope-benefit-checkbox:checked")).map(cb => cb.value);
+                                    s.benefits.forEach(b => {
+                                        const hasDep = b.scopeDependencies.includes(id);
+                                        if (checkedBenIds.includes(b.id)) {
+                                            if (!hasDep) {
+                                                b.scopeDependencies.push(id);
+                                                if (!b.contributionWeights) b.contributionWeights = {};
+                                                b.contributionWeights[id] = Math.round(100 / b.scopeDependencies.length);
+                                            }
+                                        } else {
+                                            if (hasDep) {
+                                                b.scopeDependencies = b.scopeDependencies.filter(sid => sid !== id);
+                                                if (b.contributionWeights && b.contributionWeights[id]) {
+                                                    delete b.contributionWeights[id];
+                                                }
+                                            }
+                                        }
+                                    });
                                 }
                             }
                         });
@@ -1492,7 +1562,16 @@ class StrategyView {
                                         metric: document.getElementById("form-okr-metric").value,
                                         target: Number(document.getElementById("form-okr-target").value),
                                         current: 0,
-                                        unit: document.getElementById("form-okr-unit").value
+                                        unit: document.getElementById("form-okr-unit").value,
+                                        isArchived: false
+                                    });
+
+                                    // Double-sided linkage CRUD with Benefits
+                                    const checkedBenIds = Array.from(document.querySelectorAll(".form-okr-benefit-checkbox:checked")).map(cb => cb.value);
+                                    s.benefits.forEach(b => {
+                                        if (checkedBenIds.includes(b.id)) {
+                                            b.alignedOkrId = newId;
+                                        }
                                     });
                                 }
                             } else if (type === 'benefit') {
@@ -1527,6 +1606,8 @@ class StrategyView {
                                     id: newId,
                                     name: document.getElementById("form-scope-name").value,
                                     description: document.getElementById("form-scope-desc").value,
+                                    startDate: document.getElementById("form-scope-start-date").value,
+                                    endDate: document.getElementById("form-scope-end-date").value,
                                     methodology: document.getElementById("form-scope-methodology").value,
                                     status: document.getElementById("form-scope-status").value,
                                     expectedValue: Number(document.getElementById("form-scope-value").value),
@@ -1544,11 +1625,22 @@ class StrategyView {
                                             etc: Number(document.getElementById("form-scope-opex-etc").value)
                                         }
                                     },
-                                    progress: 0
+                                    progress: 0,
+                                    isArchived: false
                                 };
                                 s.scopes.push(newScope);
                                 s.scenario.includedProjectIds.push(newId);
                                 s.scenario.scheduleOffsets[newId] = 0;
+
+                                // Double-sided linkage CRUD with Benefits
+                                const checkedBenIds = Array.from(document.querySelectorAll(".form-scope-benefit-checkbox:checked")).map(cb => cb.value);
+                                s.benefits.forEach(b => {
+                                    if (checkedBenIds.includes(b.id)) {
+                                        b.scopeDependencies.push(newId);
+                                        if (!b.contributionWeights) b.contributionWeights = {};
+                                        b.contributionWeights[newId] = Math.round(100 / b.scopeDependencies.length);
+                                    }
+                                });
                             }
                         });
                         modal.classList.add("hidden");

@@ -222,11 +222,8 @@
                             <button id="mode-live-btn" class="btn">Live OpenRouter.ai API</button>
                         </div>
                         <p class="help-text">Simulation Mode works out-of-the-box. Live mode connects to OpenRouter.ai APIs.</p>
-                    </div>
-                    <div class="form-group" id="apikey-group">
-                        <label for="openrouter-api-key">OpenRouter API Key</label>
-                        <input type="password" id="openrouter-api-key" placeholder="sk-or-v1-..." autocomplete="off">
-                        <p class="help-text">Leave blank if deployed on Vercel with the "Openarouter" environment variable set. Otherwise, your API key is stored securely in your browser's LocalStorage for direct requests.</p>
+                    <div class="form-group" id="apikey-group" style="display: none !important;">
+                        <input type="hidden" id="openrouter-api-key" value="">
                     </div>
                     <div class="form-group" id="model-group">
                         <label for="openrouter-model">Preferred LLM Model</label>

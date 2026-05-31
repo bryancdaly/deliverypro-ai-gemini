@@ -34,6 +34,7 @@ class CopilotView {
     init() {
         this.bindEvents();
         this.loadSettings();
+        this.loadAvailableModels();
     }
 
     loadSettings() {
@@ -53,6 +54,68 @@ class CopilotView {
 
         // Set status dot class
         aiEngine.updateSettings(mode, key, model);
+    }
+
+    async loadAvailableModels() {
+        const select = this.modelSelect;
+        if (!select) return;
+
+        // Display Loading text
+        select.innerHTML = '<option value="">Loading available models...</option>';
+
+        try {
+            let data = null;
+            // 1. Try fetching from backend proxy first
+            try {
+                const response = await fetch("/api/models");
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    console.warn(`Backend models proxy returned HTTP ${response.status}`);
+                }
+            } catch(e) {
+                console.log("Backend models proxy failed (likely running locally), falling back to direct public fetch:", e);
+            }
+
+            // 2. Fallback to direct public models fetch if backend failed or is not available
+            if (!data) {
+                const response = await fetch("https://openrouter.ai/api/v1/models");
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    throw new Error(`Public models API returned HTTP ${response.status}`);
+                }
+            }
+
+            if (data && data.data && Array.isArray(data.data)) {
+                // Populate the selector with models from OpenRouter
+                select.innerHTML = data.data.map(model => `
+                    <option value="${model.id}">${model.name || model.id}</option>
+                `).join('');
+
+                // Restore previous selection if it exists in the fetched list, otherwise default to Gemini 2.5 Pro or first
+                const savedModel = aiEngine.apiConfig.model;
+                if (savedModel && data.data.some(m => m.id === savedModel)) {
+                    select.value = savedModel;
+                } else if (data.data.some(m => m.id === "google/gemini-2.5-pro")) {
+                    select.value = "google/gemini-2.5-pro";
+                } else {
+                    select.value = data.data[0].id;
+                }
+            } else {
+                throw new Error("Invalid models data format");
+            }
+        } catch(e) {
+            console.error("Failed to load available models:", e);
+            // Fallback default list
+            select.innerHTML = `
+                <option value="google/gemini-2.5-pro">Google: Gemini 2.5 Pro</option>
+                <option value="anthropic/claude-3.5-sonnet">Anthropic: Claude 3.5 Sonnet</option>
+                <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B Instruct (Free)</option>
+            `;
+            const savedModel = aiEngine.apiConfig.model;
+            if (savedModel) select.value = savedModel;
+        }
     }
 
     bindEvents() {
