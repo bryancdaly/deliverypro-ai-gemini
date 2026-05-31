@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - STATE TRANSACTION AUDIT LOG TIMELINE VIEW
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, escapeHtml } from './store.js';
 
 class AuditView {
     constructor() {
@@ -36,14 +36,14 @@ class AuditView {
                         return `
                             <div class="audit-card ${isAi ? 'ai-audit' : ''}">
                                 <div class="audit-card-header">
-                                    <span class="audit-actor-badge">${tx.actor}</span>
-                                    <span class="audit-time">${tx.timestamp}</span>
+                                    <span class="audit-actor-badge">${escapeHtml(tx.actor)}</span>
+                                    <span class="audit-time">${escapeHtml(tx.timestamp)}</span>
                                 </div>
                                 <div class="audit-card-body">
-                                    <h4>${tx.action}</h4>
-                                    
+                                    <h4>${escapeHtml(tx.action)}</h4>
+
                                     <div class="audit-diff-pane">
-                                        ${tx.diff.map(d => `<div style="margin-bottom:4px; color: var(--color-text-secondary)">• ${d}</div>`).join('')}
+                                        ${tx.diff.map(d => `<div style="margin-bottom:4px; color: var(--color-text-secondary)">• ${escapeHtml(d)}</div>`).join('')}
                                     </div>
                                 </div>
                                 <div class="audit-card-footer">

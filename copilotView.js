@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - AI COPILOT INTERFACE VIEW COMPONENT
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, escapeHtml } from './store.js';
 import { aiEngine } from './aiEngine.js';
 
 class CopilotView {
@@ -296,7 +296,13 @@ class CopilotView {
     appendMessage(htmlText, type) {
         const bubble = document.createElement("div");
         bubble.className = `message ${type === 'user' ? 'user-msg' : 'ai-msg'}`;
-        bubble.innerHTML = htmlText;
+        if (type === 'user') {
+            // User-typed text must not be rendered as HTML
+            bubble.textContent = htmlText;
+        } else {
+            // AI responses are structured HTML from our own templates
+            bubble.innerHTML = htmlText;
+        }
         this.chatBody.appendChild(bubble);
     }
 
@@ -325,7 +331,7 @@ class CopilotView {
         let diffsHtml = proposal.diffs.map(d => {
             const isAdd = d.startsWith("[NEW]") || d.startsWith("Include");
             const isDel = d.startsWith("[DELETE]") || d.startsWith("Exclude") || d.startsWith("Adjust");
-            return `<div class="proposal-diff-item ${isAdd ? 'add' : (isDel ? 'del' : '')}">${d}</div>`;
+            return `<div class="proposal-diff-item ${isAdd ? 'add' : (isDel ? 'del' : '')}">${escapeHtml(d)}</div>`;
         }).join('');
 
         card.innerHTML = `

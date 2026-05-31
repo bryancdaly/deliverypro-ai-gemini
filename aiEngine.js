@@ -2,7 +2,7 @@
    DELIVERYPRO.AI SIMULATION ENGINE & OPENROUTER.AI CLIENT
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, escapeHtml } from './store.js';
 
 class DeliveryProAIEngine {
     constructor() {
@@ -282,6 +282,12 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
         // 4. INVESTIGATION: OKR ALIGNMENT
         if (p.includes("okr") || p.includes("alignment") || p.includes("logistics")) {
             const emissionsOkr = state.strategy.flatMap(s=>s.objectives).find(o => o.id === "okr-emissions");
+            if (!emissionsOkr) {
+                return {
+                    text: `<p>The emissions reduction OKR could not be found in the current strategy portfolio. It may have been archived or removed. Please check the <b>Strategy Board</b> to verify your active objectives.</p>`,
+                    proposal: null
+                };
+            }
             const alignedBens = state.benefits.filter(b => b.alignedOkrId === emissionsOkr.id);
 
             let resText = `<p>Here is the top-down alignment profile for the <b>${emissionsOkr.title}</b> objective:</p>
@@ -319,7 +325,7 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
 
         // 6. DEFAULT FALLBACK CHAT RESPONSE
         return {
-            text: `<p>I am reviewing your request: <i>"${prompt}"</i>.</p>
+            text: `<p>I am reviewing your request: <i>"${escapeHtml(prompt)}"</i>.</p>
             <p>Based on our **DeliveryPro.AI** context, I recommend trying these specific directives:</p>
             <ul style="margin: 12px 0 0 20px; font-size: 13px; color: var(--color-text-secondary); line-height: 1.5;">
                 <li style="margin-bottom: 4px;">Ask: <b>"Show OKR alignment for Logistics"</b> to inspect our strategy cascading trace paths.</li>
@@ -333,5 +339,6 @@ Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
 }
 
 const aiEngine = new DeliveryProAIEngine();
+if (typeof window !== 'undefined') window.__aiEngine = aiEngine;
 export default aiEngine;
 export { aiEngine };

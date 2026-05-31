@@ -280,16 +280,7 @@ class IntakeView {
         const wsjf = (fit + roi) / comp;
         const wsjfEl = document.getElementById("score-wsjf-val");
         if (wsjfEl) wsjfEl.textContent = wsjf.toFixed(2);
-
-        if (this._activeVettingId) {
-            const req = store.state.intakeRequests.find(r => r.id === this._activeVettingId);
-            if (req) {
-                req.scores.stratFit = fit;
-                req.scores.roi = roi;
-                req.scores.complexity = comp;
-                req.WSJF = parseFloat(wsjf.toFixed(2));
-            }
-        }
+        // Scores are committed to store inside the promote/reject handlers — no direct mutation here
     }
 
     bindEvents() {
@@ -459,6 +450,12 @@ class IntakeView {
             const req = store.state.intakeRequests.find(r => r.id === this._activeVettingId);
             if (!req) return;
 
+            // Read final scores from DOM inputs so they're captured in the transaction
+            const finalFit = parseFloat(document.getElementById("score-fit")?.value) || req.scores.stratFit;
+            const finalRoi = parseFloat(document.getElementById("score-roi")?.value) || req.scores.roi;
+            const finalComp = Math.max(parseFloat(document.getElementById("score-complex")?.value) || req.scores.complexity, 0.1);
+            const finalWsjf = parseFloat(((finalFit + finalRoi) / finalComp).toFixed(2));
+
             store.commitTransaction(`Promote "${req.title}" to active portfolio`, "Vetting Board", (state) => {
                 // 1. Remove from intake
                 state.intakeRequests = state.intakeRequests.filter(r => r.id !== this._activeVettingId);
@@ -474,16 +471,16 @@ class IntakeView {
                     description: req.description,
                     startDate: req.startDate || "",
                     endDate: req.endDate || "",
-                    methodology: req.scores.stratFit > 8 ? "Agile" : "Waterfall",
+                    methodology: finalFit > 8 ? "Agile" : "Waterfall",
                     status: "In Flight",
-                    expectedValue: Math.round(req.scores.stratFit * 10),
-                    executionRisk: Math.round(req.scores.complexity * 8),
+                    expectedValue: Math.round(finalFit * 10),
+                    executionRisk: Math.round(finalComp * 8),
                     financials: {
                         capEx: { plan: capEx, actual: 0, etc: capEx },
                         opEx: { plan: opEx, actual: 0, etc: opEx }
                     },
                     progress: 0,
-                    fteAllocations: req.scores.complexity > 6 ? 6 : 3
+                    fteAllocations: finalComp > 6 ? 6 : 3
                 };
                 state.scopes.push(newScope);
 

@@ -34,8 +34,8 @@ class GanttView {
                         <p>Simulate a schedule delay on "Fleet Procurement" to recalculate downstream impact cascades</p>
                     </div>
                     <div class="r-slider-control">
-                        <input type="range" id="gantt-delay-simulator" min="0" max="6" value="0" style="accent-color: var(--color-warning);">
-                        <div class="r-slider-label" id="gantt-delay-label" style="color: var(--color-warning)">+0 months</div>
+                        <input type="range" id="gantt-delay-simulator" min="0" max="6" value="${state.scenario.scheduleOffsets['scope-transport-fleet'] || 0}" style="accent-color: var(--color-warning);">
+                        <div class="r-slider-label" id="gantt-delay-label" style="color: var(--color-warning)">+${state.scenario.scheduleOffsets['scope-transport-fleet'] || 0} months</div>
                     </div>
                 </div>
 
@@ -102,30 +102,48 @@ class GanttView {
         const mitigationCard = document.getElementById("gantt-mitigation-card");
         const recText = document.getElementById("mitigation-recommendation-text");
 
+        const redrawBars = (localOffsets) => {
+            const level = state.scenario.activeHierarchyLevel || "enterprise";
+            let scopesToDraw = state.scopes.filter(s => !s.isArchived && state.scenario.includedProjectIds.includes(s.id));
+            if (level === "program") {
+                scopesToDraw = scopesToDraw.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
+            } else if (level === "project") {
+                scopesToDraw = scopesToDraw.filter(s => ["scope-route-optimization"].includes(s.id));
+            }
+            const ganttGrid = document.querySelector(".gantt-timeline-grid");
+            if (ganttGrid) {
+                ganttGrid.innerHTML = scopesToDraw.map(s => {
+                    const offset = localOffsets[s.id] !== undefined ? localOffsets[s.id] : (state.scenario.scheduleOffsets[s.id] || 0);
+                    const baseStart = s.id === 'scope-transport-fleet' ? 2 : (s.id === 'scope-safety-module' ? 6 : 0);
+                    const start = baseStart + offset;
+                    const duration = s.id === 'scope-transport-fleet' ? 8 : (s.id === 'scope-safety-module' ? 4 : 4);
+                    const pctLeft = (start / 12) * 100;
+                    const pctWidth = (duration / 12) * 100;
+                    return `
+                        <div class="gantt-row-line">
+                            <div class="gantt-bar" style="left: ${pctLeft}%; width: ${pctWidth}%; background: ${offset > 0 ? 'var(--color-warning)' : 'var(--accent-indigo-gradient)'};"></div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        };
+
         if (slider) {
             slider.addEventListener("input", (e) => {
                 const delay = parseInt(e.target.value);
                 if (sliderVal) sliderVal.textContent = `+${delay} months`;
 
-                // Update schedule offsets for the Fleet Procurement scope in real-time
-                const targetScopeId = 'scope-transport-fleet';
-                state.scenario.scheduleOffsets[targetScopeId] = delay;
-                
-                // CASCADING downstream schedules: Safety Module depends on Fleet Procurement
-                // If Fleet is delayed, push Safety Module as well
-                const safetyScopeId = 'scope-safety-module';
-                const baseSafetyStart = 6;
+                // Compute cascading offsets locally for visual feedback — no store writes during drag
                 const baseFleetStart = 2;
                 const baseFleetDuration = 8;
+                const baseSafetyStart = 6;
                 const fleetEnd = baseFleetStart + delay + baseFleetDuration;
+                const safetyDelay = fleetEnd > baseSafetyStart ? fleetEnd - baseSafetyStart : 0;
+                const localOffsets = {
+                    'scope-transport-fleet': delay,
+                    'scope-safety-module': safetyDelay
+                };
 
-                if (fleetEnd > baseSafetyStart) {
-                    state.scenario.scheduleOffsets[safetyScopeId] = fleetEnd - baseSafetyStart;
-                } else {
-                    state.scenario.scheduleOffsets[safetyScopeId] = 0;
-                }
-
-                // Render warning card if delay > 0
                 if (delay > 0) {
                     if (mitigationCard) mitigationCard.classList.remove("hidden");
                     if (recText) {
@@ -135,35 +153,26 @@ class GanttView {
                     if (mitigationCard) mitigationCard.classList.add("hidden");
                 }
 
-                // Recount cascades and redraw timeline bars silently
-                store.recalculateAllMetrics(false);
-                
-                // Redraw horizontal timeline bars
-                const level = state.scenario.activeHierarchyLevel || "enterprise";
-                let activeScopes = state.scopes.filter(s => !s.isArchived && state.scenario.includedProjectIds.includes(s.id));
-                if (level === "program") {
-                    activeScopes = activeScopes.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
-                } else if (level === "project") {
-                    activeScopes = activeScopes.filter(s => ["scope-route-optimization"].includes(s.id));
-                }
-                const ganttGrid = document.querySelector(".gantt-timeline-grid");
-                if (ganttGrid) {
-                    ganttGrid.innerHTML = activeScopes.map(s => {
-                        const offset = state.scenario.scheduleOffsets[s.id] || 0;
-                        const baseStart = s.id === 'scope-transport-fleet' ? 2 : (s.id === 'scope-safety-module' ? 6 : 0);
-                        const start = baseStart + offset;
-                        const duration = s.id === 'scope-transport-fleet' ? 8 : (s.id === 'scope-safety-module' ? 4 : 4);
-                        
-                        const pctLeft = (start / 12) * 100;
-                        const pctWidth = (duration / 12) * 100;
+                redrawBars(localOffsets);
+            });
 
-                        return `
-                            <div class="gantt-row-line">
-                                <div class="gantt-bar" style="left: ${pctLeft}%; width: ${pctWidth}%; background: ${offset > 0 ? 'var(--color-warning)' : 'var(--accent-indigo-gradient)'};"></div>
-                            </div>
-                        `;
-                    }).join('');
-                }
+            // Commit the final offset value to the store with a full audit trail on slider release
+            slider.addEventListener("change", (e) => {
+                const delay = parseInt(e.target.value);
+                const baseFleetStart = 2;
+                const baseFleetDuration = 8;
+                const baseSafetyStart = 6;
+                const fleetEnd = baseFleetStart + delay + baseFleetDuration;
+                const safetyDelay = fleetEnd > baseSafetyStart ? fleetEnd - baseSafetyStart : 0;
+
+                store.commitTransaction(
+                    `Gantt Delay Simulation: Fleet Procurement +${delay} month${delay !== 1 ? 's' : ''}`,
+                    "Gantt Simulator",
+                    (s) => {
+                        s.scenario.scheduleOffsets['scope-transport-fleet'] = delay;
+                        s.scenario.scheduleOffsets['scope-safety-module'] = safetyDelay;
+                    }
+                );
             });
         }
     }

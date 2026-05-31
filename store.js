@@ -2,6 +2,11 @@
    DELIVERYPRO.AI STATE MANAGER & REACTIVE DATA STORES
    ========================================================================== */
 
+function escapeHtml(str) {
+    if (typeof str !== 'string') return String(str ?? '');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 class DeliveryProStore {
     constructor() {
         // Initial core state
@@ -273,6 +278,9 @@ class DeliveryProStore {
                     parsed.scenario.includedProjectIds && 
                     parsed.scenario.realizationMonthSlider !== undefined) {
                     
+                    // Migrate older saves that may lack these arrays
+                    if (!Array.isArray(parsed.pulseFeed)) parsed.pulseFeed = this.state.pulseFeed;
+                    if (!Array.isArray(parsed.auditLog)) parsed.auditLog = [];
                     this.state = parsed;
                 } else {
                     console.warn("Saved portfolio state is incomplete or outdated. Discarding to load fresh defaults.");
@@ -440,8 +448,11 @@ class DeliveryProStore {
                     }
                 });
 
-                // Convert to aggregate percentage
-                const netAchievement = Math.max(0, Math.min(totalStrategicPull / alignedBenefits.filter(b => !b.isDisbenefit).length, 1.0));
+                // Convert to aggregate percentage; guard against divide-by-zero when all benefits are disbenefits
+                const positiveBenCount = alignedBenefits.filter(b => !b.isDisbenefit).length;
+                const netAchievement = positiveBenCount > 0
+                    ? Math.max(0, Math.min(totalStrategicPull / positiveBenCount, 1.0))
+                    : 0;
                 okr.current = Math.round(netAchievement * okr.target);
             });
         });
@@ -513,6 +524,8 @@ class DeliveryProStore {
             return true;
         } catch(e) {
             console.error("State transaction aborted due to execution error:", e);
+            // Restore pre-snapshot to undo any partial mutations
+            try { this.state = JSON.parse(preSnapshot); } catch(_) {}
             return false;
         }
     }
@@ -606,23 +619,25 @@ class DeliveryProStore {
     // ==========================================================================
     logPulseEvent(actor, msg, type = "user") {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const safeActor = escapeHtml(actor);
+        const safeMsg = escapeHtml(msg);
         const event = {
             id: "pulse-" + Date.now(),
             time: time,
             type: type,
-            msg: `<b>${actor}:</b> ${msg}`
+            msg: `<b>${safeActor}:</b> ${safeMsg}`
         };
         this.state.pulseFeed.unshift(event);
         if (this.state.pulseFeed.length > 20) {
             this.state.pulseFeed.pop();
         }
-        
+
         // Notify pulse render element if view rendering app is ready
         const pulseStream = document.getElementById("pulse-stream");
         if (pulseStream) {
             const card = document.createElement("div");
             card.className = `pulse-card ${type}`;
-            card.innerHTML = `<span class="pulse-time">${time}</span><span class="pulse-meta">${actor}</span> ${msg}`;
+            card.innerHTML = `<span class="pulse-time">${time}</span><span class="pulse-meta">${safeActor}</span> ${safeMsg}`;
             pulseStream.insertBefore(card, pulseStream.firstChild);
             if (pulseStream.childNodes.length > 20) {
                 pulseStream.removeChild(pulseStream.lastChild);
@@ -652,5 +667,6 @@ class DeliveryProStore {
 
 // Global initialization
 const store = new DeliveryProStore();
+if (typeof window !== 'undefined') window.__store = store;
 export default store;
-export { store };
+export { store, escapeHtml };
