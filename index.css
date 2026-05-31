@@ -842,12 +842,76 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .message.ai-msg {
+    display: block; /* Override .message flex so markdown children stack vertically */
     align-self: flex-start;
     background: hsla(220, 20%, 30%, 0.02);
     border: 1px solid var(--glass-border);
     border-radius: 16px 16px 16px 2px;
-    padding: 12px 16px;
+    padding: 14px 16px;
     color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+/* Rendered markdown typography inside AI bubbles */
+.message.ai-msg p {
+    margin: 0 0 8px;
+}
+.message.ai-msg p:last-child {
+    margin-bottom: 0;
+}
+.message.ai-msg ul,
+.message.ai-msg ol {
+    margin: 4px 0 8px 18px;
+    padding: 0;
+}
+.message.ai-msg li {
+    margin-bottom: 4px;
+    line-height: 1.5;
+}
+.message.ai-msg strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+.message.ai-msg em {
+    font-style: italic;
+    color: var(--color-text-muted);
+}
+.message.ai-msg code {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 11.5px;
+    background: hsla(220, 20%, 50%, 0.1);
+    border: 1px solid var(--glass-border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--accent-indigo);
+}
+.message.ai-msg h1,
+.message.ai-msg h2,
+.message.ai-msg h3,
+.message.ai-msg h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 10px 0 4px;
+    line-height: 1.3;
+}
+.message.ai-msg h1:first-child,
+.message.ai-msg h2:first-child,
+.message.ai-msg h3:first-child {
+    margin-top: 0;
+}
+.message.ai-msg blockquote {
+    border-left: 3px solid var(--accent-indigo);
+    margin: 6px 0;
+    padding: 4px 12px;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+.message.ai-msg hr {
+    border: none;
+    border-top: 1px solid var(--glass-border);
+    margin: 10px 0;
 }
 
 /* Actionable Change Proposal Cards (Copilot UI Diffs) */

@@ -297,11 +297,12 @@ class CopilotView {
         const bubble = document.createElement("div");
         bubble.className = `message ${type === 'user' ? 'user-msg' : 'ai-msg'}`;
         if (type === 'user') {
-            // User-typed text must not be rendered as HTML
             bubble.textContent = htmlText;
         } else {
-            // AI responses are structured HTML from our own templates
-            bubble.innerHTML = htmlText;
+            // Parse markdown to HTML (handles **bold**, * bullets, `code`, etc.)
+            // Falls back to raw HTML for our own template strings that are already HTML
+            const rendered = window.marked ? window.marked.parse(htmlText) : htmlText;
+            bubble.innerHTML = rendered;
         }
         this.chatBody.appendChild(bubble);
     }
