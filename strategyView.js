@@ -941,20 +941,10 @@ class StrategyView {
                 `;
             }
 
-            let bottomActionBar = "";
-            if (type === "strat") {
-                bottomActionBar = `
+            let bottomActionBar = `
                     <div class="modal-action-bar">
                         <button class="btn btn-secondary" id="inspect-edit-btn" style="border-color:var(--accent-indigo); color:var(--accent-indigo); display:flex; align-items:center; gap:4px;">
-                            <span class="material-symbols-outlined" style="font-size:14px;">edit</span> Edit Strategy
-                        </button>
-                    </div>
-                `;
-            } else {
-                bottomActionBar = `
-                    <div class="modal-action-bar">
-                        <button class="btn btn-secondary" id="inspect-edit-btn" style="border-color:var(--accent-indigo); color:var(--accent-indigo); display:flex; align-items:center; gap:4px;">
-                            <span class="material-symbols-outlined" style="font-size:14px;">edit</span> Edit Details
+                            <span class="material-symbols-outlined" style="font-size:14px;">edit</span> Edit ${type === 'strat' ? 'Strategy' : 'Details'}
                         </button>
                         <button class="btn btn-secondary" id="inspect-close-btn" style="border-color:var(--color-success); color:var(--color-success); display:flex; align-items:center; gap:4px;">
                             <span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Close/Complete
@@ -964,62 +954,69 @@ class StrategyView {
                         </button>
                     </div>
                 `;
-            }
 
             modalBody.innerHTML = headerHtml + bodyHtml + bottomActionBar;
 
             const editBtn = document.getElementById("inspect-edit-btn");
             if (editBtn) editBtn.onclick = () => this.openContributionInspector(type, id, state, "edit");
 
-            if (type !== "strat") {
-                const closeBtnActions = document.getElementById("inspect-close-btn");
-                const archiveBtn = document.getElementById("inspect-archive-btn");
+            const closeBtnActions = document.getElementById("inspect-close-btn");
+            const archiveBtn = document.getElementById("inspect-archive-btn");
 
-                const recordName = type === 'okr' ? state.strategy.objectives.find(o => o.id === id).title :
-                                   type === 'benefit' ? state.benefits.find(b => b.id === id).name :
-                                   state.scopes.find(s => s.id === id).name;
+            const recordName = type === 'strat' ? (state.strategy.find(s => s.id === id) || {}).title || 'Strategy' :
+                               type === 'okr' ? (state.strategy.flatMap(s => s.objectives).find(o => o.id === id) || {}).title || 'OKR' :
+                               type === 'benefit' ? (state.benefits.find(b => b.id === id) || {}).name || 'Benefit' :
+                               (state.scopes.find(s => s.id === id) || {}).name || 'Scope';
 
-                if (closeBtnActions) {
-                    closeBtnActions.onclick = () => {
-                        store.commitTransaction(`Complete ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
-                            if (type === 'okr') {
-                                const okr = s.strategy.objectives.find(o => o.id === id);
-                                if (okr) okr.current = okr.target;
-                            } else if (type === 'benefit') {
-                                const ben = s.benefits.find(b => b.id === id);
-                                if (ben) ben.metric.current = ben.metric.target;
-                            } else if (type === 'scope') {
-                                const scope = s.scopes.find(sc => sc.id === id);
-                                if (scope) {
-                                    scope.status = "Completed";
-                                    scope.progress = 100;
-                                    s.tasks.filter(t => t.scopeId === id).forEach(t => t.status = "done");
-                                }
+            if (closeBtnActions) {
+                closeBtnActions.onclick = () => {
+                    store.commitTransaction(`Complete ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
+                        if (type === 'strat') {
+                            const strat = s.strategy.find(st => st.id === id);
+                            if (strat) {
+                                strat.objectives.forEach(okr => okr.current = okr.target);
+                                strat.health = 100;
                             }
-                        });
-                        modal.classList.add("hidden");
-                        this.render(store.state);
-                    };
-                }
-
-                if (archiveBtn) {
-                    archiveBtn.onclick = () => {
-                        store.commitTransaction(`Archive ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
-                            if (type === 'okr') {
-                                const okr = s.strategy.objectives.find(o => o.id === id);
-                                if (okr) okr.isArchived = true;
-                            } else if (type === 'benefit') {
-                                const ben = s.benefits.find(b => b.id === id);
-                                if (ben) ben.isArchived = true;
-                            } else if (type === 'scope') {
-                                const scope = s.scopes.find(sc => sc.id === id);
-                                if (scope) scope.isArchived = true;
+                        } else if (type === 'okr') {
+                            const okr = s.strategy.flatMap(st => st.objectives).find(o => o.id === id);
+                            if (okr) okr.current = okr.target;
+                        } else if (type === 'benefit') {
+                            const ben = s.benefits.find(b => b.id === id);
+                            if (ben) ben.metric.current = ben.metric.target;
+                        } else if (type === 'scope') {
+                            const scope = s.scopes.find(sc => sc.id === id);
+                            if (scope) {
+                                scope.status = "Completed";
+                                scope.progress = 100;
+                                s.tasks.filter(t => t.scopeId === id).forEach(t => t.status = "done");
                             }
-                        });
-                        modal.classList.add("hidden");
-                        this.render(store.state);
-                    };
-                }
+                        }
+                    });
+                    modal.classList.add("hidden");
+                    this.render(store.state);
+                };
+            }
+
+            if (archiveBtn) {
+                archiveBtn.onclick = () => {
+                    store.commitTransaction(`Archive ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
+                        if (type === 'strat') {
+                            const strat = s.strategy.find(st => st.id === id);
+                            if (strat) strat.isArchived = true;
+                        } else if (type === 'okr') {
+                            const okr = s.strategy.flatMap(st => st.objectives).find(o => o.id === id);
+                            if (okr) okr.isArchived = true;
+                        } else if (type === 'benefit') {
+                            const ben = s.benefits.find(b => b.id === id);
+                            if (ben) ben.isArchived = true;
+                        } else if (type === 'scope') {
+                            const scope = s.scopes.find(sc => sc.id === id);
+                            if (scope) scope.isArchived = true;
+                        }
+                    });
+                    modal.classList.add("hidden");
+                    this.render(store.state);
+                };
             }
         } 
         
@@ -1031,6 +1028,8 @@ class StrategyView {
 
             if (type === "strat") {
                 const strat = isEdit ? state.strategy.find(s => s.id === id) : null;
+                // Gather all OKRs across all strategies for linkage management
+                const allOkrs = state.strategy.flatMap(s => (s.objectives || []).filter(o => !o.isArchived).map(o => ({ ...o, parentStratId: s.id })));
                 formHtml = `
                     <div class="contrib-form-group">
                         <label>Enterprise Strategy Title</label>
@@ -1040,6 +1039,25 @@ class StrategyView {
                         <label>Strategy Description</label>
                         <textarea id="form-strat-desc" rows="3" required placeholder="Describe the strategic vision.">${strat ? strat.description : ''}</textarea>
                     </div>
+                    ${isEdit && allOkrs.length > 0 ? `
+                        <div class="contrib-form-group" style="margin-top: 10px;">
+                            <label>Aligned Strategic OKRs (manage linkages)</label>
+                            <div style="display:flex; flex-direction:column; gap:4px; max-height: 160px; overflow-y: auto; background: hsla(0,0%,100%,0.02); padding: 8px; border-radius: 4px; border: 1px solid var(--glass-border);">
+                                ${allOkrs.map(okr => {
+                                    const isOwned = strat && okr.parentStratId === strat.id;
+                                    const parentName = state.strategy.find(s => s.id === okr.parentStratId);
+                                    return `
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:11px; text-transform:none; color:var(--color-text-secondary); cursor:pointer;">
+                                            <input type="checkbox" class="form-strat-okr-checkbox" value="${okr.id}" data-parent="${okr.parentStratId}" ${isOwned ? 'checked' : ''} style="width:14px; height:14px;">
+                                            <span>${okr.title}</span>
+                                            ${!isOwned ? `<span style="font-size:9px; color:var(--color-text-muted); margin-left:auto;">(from: ${parentName ? parentName.title.substring(0, 30) + '...' : 'Unknown'})</span>` : ''}
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <p class="help-text" style="margin-top:4px;">Check/uncheck OKRs to reassign them to this strategy.</p>
+                        </div>
+                    ` : ''}
                     ${!isEdit ? `
                         <div style="margin-top: 10px; padding: 12px; background: hsla(250, 85%, 58%, 0.05); border-radius: 8px; border: 1px dashed hsla(250, 85%, 58%, 0.2);">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
@@ -1285,9 +1303,9 @@ class StrategyView {
                 editActions = `
                     <div class="modal-action-bar">
                         <button class="btn btn-primary" id="edit-save-btn">Save Changes</button>
-                        ${type !== 'strat' ? `<button class="btn btn-secondary" id="edit-delete-btn" style="border-color:var(--color-danger); color:var(--color-danger); margin-right:auto; display:flex; align-items:center; gap:4px;">
+                        <button class="btn btn-secondary" id="edit-delete-btn" style="border-color:var(--color-danger); color:var(--color-danger); margin-right:auto; display:flex; align-items:center; gap:4px;">
                             <span class="material-symbols-outlined" style="font-size:14px;">delete_forever</span> Delete Permanent
-                        </button>` : `<div style="margin-right:auto;"></div>`}
+                        </button>
                         <button class="btn btn-secondary" id="edit-cancel-btn">Cancel</button>
                     </div>
                 `;
@@ -1317,10 +1335,27 @@ class StrategyView {
 
                 if (cancelBtn) cancelBtn.onclick = () => this.openContributionInspector(type, id, state, "inspect");
 
-                if (deleteBtn && type !== "strat") {
+                if (deleteBtn) {
                     deleteBtn.onclick = () => {
+                        const confirmMsg = type === 'strat'
+                            ? `This will permanently delete the strategy "${recordName}" and all its child OKRs. Benefits aligned to those OKRs will be unlinked. Continue?`
+                            : `Permanently delete ${type.toUpperCase()}: "${recordName}"?`;
+                        if (!confirm(confirmMsg)) return;
+
                         store.commitTransaction(`Permanently Delete ${type.toUpperCase()}: "${recordName}"`, "User Action", (s) => {
-                            if (type === 'okr') {
+                            if (type === 'strat') {
+                                const strat = s.strategy.find(st => st.id === id);
+                                if (strat) {
+                                    // Unlink all benefits aligned to this strategy's OKRs
+                                    const okrIds = strat.objectives.map(o => o.id);
+                                    s.benefits.forEach(b => {
+                                        if (okrIds.includes(b.alignedOkrId)) {
+                                            b.alignedOkrId = '';
+                                        }
+                                    });
+                                }
+                                s.strategy = s.strategy.filter(st => st.id !== id);
+                            } else if (type === 'okr') {
                                 s.strategy.forEach(st => {
                                     st.objectives = st.objectives.filter(o => o.id !== id);
                                 });
@@ -1349,6 +1384,35 @@ class StrategyView {
                                 if (strat) {
                                     strat.title = document.getElementById("form-strat-title").value;
                                     strat.description = document.getElementById("form-strat-desc").value;
+
+                                    // Handle OKR linkage reassignment
+                                    const checkedOkrIds = Array.from(document.querySelectorAll(".form-strat-okr-checkbox:checked")).map(cb => cb.value);
+                                    const uncheckedOkrIds = Array.from(document.querySelectorAll(".form-strat-okr-checkbox:not(:checked)")).map(cb => cb.value);
+
+                                    // Move checked OKRs to this strategy (if they belong to another)
+                                    checkedOkrIds.forEach(okrId => {
+                                        // Find the OKR's current parent
+                                        const currentParent = s.strategy.find(st => st.objectives.some(o => o.id === okrId));
+                                        if (currentParent && currentParent.id !== id) {
+                                            const okrObj = currentParent.objectives.find(o => o.id === okrId);
+                                            currentParent.objectives = currentParent.objectives.filter(o => o.id !== okrId);
+                                            strat.objectives.push(okrObj);
+                                        }
+                                    });
+
+                                    // Remove unchecked OKRs that currently belong to this strategy (orphan them to first available strategy or remove)
+                                    uncheckedOkrIds.forEach(okrId => {
+                                        const isOurs = strat.objectives.some(o => o.id === okrId);
+                                        if (isOurs) {
+                                            const okrObj = strat.objectives.find(o => o.id === okrId);
+                                            strat.objectives = strat.objectives.filter(o => o.id !== okrId);
+                                            // Move to the first other strategy, or leave orphaned
+                                            const otherStrat = s.strategy.find(st => st.id !== id && !st.isArchived);
+                                            if (otherStrat) {
+                                                otherStrat.objectives.push(okrObj);
+                                            }
+                                        }
+                                    });
                                 }
                             } else if (type === 'okr') {
                                 const okr = s.strategy.flatMap(st=>st.objectives).find(o => o.id === id);
