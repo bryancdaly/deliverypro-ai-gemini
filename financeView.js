@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - FINANCIALS & BENEFITS VIEW
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, isScopeInHierarchy, isBenefitInHierarchy } from './store.js';
 
 class FinanceView {
     constructor() {
@@ -13,22 +13,8 @@ class FinanceView {
         const container = document.getElementById(this.containerId);
         if (!container) return;
 
-        const level = state.scenario.activeHierarchyLevel || "enterprise";
-        
-        const isScopeInHierarchy = (scopeId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
-            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
-            return true;
-        };
-
-        const isBenefitInHierarchy = (benId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program" || level === "project") {
-                return ["ben-transport-transition", "ben-ops-savings"].includes(benId);
-            }
-            return true;
-        };
+        const scopeInHierarchy = (scopeId) => isScopeInHierarchy(scopeId, state);
+        const benefitInHierarchy = (benefit) => isBenefitInHierarchy(benefit, state);
 
         // Sum aggregates across active included scopes
         let totalCapExPlan = 0;
@@ -42,7 +28,7 @@ class FinanceView {
         state.scopes.forEach(scope => {
             if (scope.isArchived) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
-            if (isIncluded && isScopeInHierarchy(scope.id)) {
+            if (isIncluded && scopeInHierarchy(scope.id)) {
                 totalCapExPlan += scope.financials.capEx.plan;
                 totalCapExActual += scope.financials.capEx.actual;
                 totalCapExEtc += scope.financials.capEx.etc;
@@ -87,7 +73,7 @@ class FinanceView {
                             ${state.scopes.map(s => {
                                 if (s.isArchived) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(s.id);
-                                if (!isIncluded || !isScopeInHierarchy(s.id)) return '';
+                                if (!isIncluded || !scopeInHierarchy(s.id)) return '';
                                 return `
                                     <div class="ledger-item">
                                         <div class="cost-lbl">
@@ -111,7 +97,7 @@ class FinanceView {
                             ${state.scopes.map(s => {
                                 if (s.isArchived) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(s.id);
-                                if (!isIncluded || !isScopeInHierarchy(s.id)) return '';
+                                if (!isIncluded || !scopeInHierarchy(s.id)) return '';
                                 return `
                                     <div class="ledger-item">
                                         <div class="cost-lbl">
@@ -139,7 +125,7 @@ class FinanceView {
                     
                     <div class="strategy-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-height: none;">
                         ${state.benefits.map(b => {
-                            if (b.isArchived || !isBenefitInHierarchy(b.id)) return '';
+                            if (b.isArchived || !benefitInHierarchy(b)) return '';
                             const realizedPct = Math.round(((b.metric.current - b.metric.baseline) / (b.metric.target - b.metric.baseline)) * 100);
                             return `
                                 <div class="benefit-profile-card ${b.isDisbenefit ? 'disbenefit' : ''}">

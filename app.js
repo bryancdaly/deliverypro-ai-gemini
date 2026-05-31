@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - CENTRAL APP CONTROLLER & MAIN ROUTER
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, escapeHtml, PROGRAM_GROUPS, isScopeInHierarchy, isBenefitInHierarchy } from './store.js';
 import StrategyView from './strategyView.js';
 import IntakeView from './intakeView.js';
 import OptimizationView from './optimizationView.js';
@@ -80,7 +80,7 @@ class DeliveryProApp {
         // --- STRUCTURAL HIERARCHY SELECTOR EVENTS ---
         const selectorBadge = document.getElementById("active-hierarchy-badge");
         const selectorContainer = document.getElementById("hierarchy-selector-container");
-        const dropdownItems = document.querySelectorAll(".dropdown-item");
+        const hierarchyDropdown = document.getElementById("hierarchy-dropdown");
 
         if (selectorBadge && selectorContainer) {
             // Toggle dropdown open/closed
@@ -89,37 +89,37 @@ class DeliveryProApp {
                 selectorContainer.classList.toggle("open");
             });
 
-            // Handle dropdown item click
-            dropdownItems.forEach(item => {
-                item.addEventListener("click", (e) => {
+            // Event delegation — handles both static and dynamically generated items
+            if (hierarchyDropdown) {
+                hierarchyDropdown.addEventListener("click", (e) => {
+                    const item = e.target.closest(".dropdown-item");
+                    if (!item) return;
                     e.stopPropagation();
-                    const selectedLevel = item.dataset.level;
-                    const levelName = item.querySelector("h4").textContent;
 
-                    // Commit central state transaction
+                    const selectedLevel = item.dataset.level;
+                    const selectedNodeId = item.dataset.nodeId || null;
+                    const levelName = item.querySelector("h4")?.textContent || selectedLevel;
+
+                    const budgetCaps = { enterprise: 1500000, portfolio: 1000000, program: 500000, project: 250000 };
+                    const fteCaps = { enterprise: 15, portfolio: 12, program: 8, project: 4 };
+
                     store.commitTransaction(
-                        `Switched active hierarchy to "${levelName}"`,
+                        `Switched hierarchy view to "${levelName}"`,
                         "Hierarchy Selector",
                         (state) => {
                             state.scenario.activeHierarchyLevel = selectedLevel;
-                            
-                            // Adjust Optimization budget sandbox caps to match hierarchy limits
-                            const budgetCaps = { enterprise: 1500000, portfolio: 1000000, program: 500000, project: 250000 };
-                            const fteCaps = { enterprise: 15, portfolio: 12, program: 8, project: 4 };
-                            
-                            state.scenario.budgetCap = budgetCaps[selectedLevel];
-                            state.scenario.fteCap = fteCaps[selectedLevel];
+                            state.scenario.activeNodeId = selectedNodeId;
+                            state.scenario.budgetCap = budgetCaps[selectedLevel] || 1500000;
+                            state.scenario.fteCap = fteCaps[selectedLevel] || 15;
                         }
                     );
 
                     selectorContainer.classList.remove("open");
-
-                    // Trigger toast notification
                     if (this.copilot) {
-                        this.copilot.showNotification(`Hierarchy Level: ${levelName} active`, "success");
+                        this.copilot.showNotification(`Hierarchy: ${levelName} active`, "success");
                     }
                 });
-            });
+            }
 
             // Click outside to close dropdown
             document.addEventListener("click", () => {
@@ -183,28 +183,30 @@ class DeliveryProApp {
         // Sync Hierarchy Selector Badge UI from store state
         const badgeNameEl = document.getElementById("active-node-name");
         const badgeIconEl = document.getElementById("active-hierarchy-icon");
-        const dropdownItems = document.querySelectorAll(".dropdown-item");
+        const nodeId = state.scenario.activeNodeId;
 
-        const levelDetails = {
-            enterprise: { name: "Enterprise (Global Corp)", icon: "business" },
-            portfolio: { name: "Portfolio (Sustainable Agriculture)", icon: "donut_large" },
-            program: { name: "Program (Logistics & Fleet)", icon: "account_tree" },
-            project: { name: "Project (Route-Optimization AI)", icon: "article" }
+        const getBadgeDetails = () => {
+            if (activeLevel === "enterprise") return { name: "Enterprise (Global Corp)", icon: "business" };
+            if (activeLevel === "portfolio") return { name: "Portfolio (Sustainable Agriculture)", icon: "donut_large" };
+            if (activeLevel === "program") {
+                const group = nodeId && PROGRAM_GROUPS[nodeId];
+                return { name: group ? `Program: ${group.name}` : "Program", icon: "account_tree" };
+            }
+            if (activeLevel === "project") {
+                const scope = nodeId && state.scopes.find(s => s.id === nodeId);
+                return { name: scope ? scope.name : "Project", icon: "article" };
+            }
+            return { name: "Enterprise (Global Corp)", icon: "business" };
         };
 
-        const currentDetails = levelDetails[activeLevel];
-        if (badgeNameEl && badgeIconEl && currentDetails) {
+        const currentDetails = getBadgeDetails();
+        if (badgeNameEl && badgeIconEl) {
             badgeNameEl.textContent = currentDetails.name;
             badgeIconEl.textContent = currentDetails.icon;
         }
 
-        dropdownItems.forEach(item => {
-            if (item.dataset.level === activeLevel) {
-                item.classList.add("active-item");
-            } else {
-                item.classList.remove("active-item");
-            }
-        });
+        // Populate dynamic program and project items in the dropdown
+        this.updateHierarchyDropdown(state);
 
         // Update sidebar relevance (dims irrelevant modules for active role)
         this.updateSidebarRelevance(activeLevel);
@@ -231,36 +233,64 @@ class DeliveryProApp {
         const activeProjEl = document.getElementById("sb-stat-projects");
         const valRealizedEl = document.getElementById("sb-stat-value");
 
-        const level = state.scenario.activeHierarchyLevel || "enterprise";
-        const isScopeInHierarchy = (scopeId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
-            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
-            return true;
-        };
-
-        const isBenefitInHierarchy = (benId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program" || level === "project") {
-                return ["ben-transport-transition", "ben-ops-savings"].includes(benId);
-            }
-            return true;
-        };
-
-        const activeCount = state.scopes.filter(s => state.scenario.includedProjectIds.includes(s.id) && isScopeInHierarchy(s.id)).length;
+        const activeCount = state.scopes.filter(s =>
+            state.scenario.includedProjectIds.includes(s.id) && isScopeInHierarchy(s.id, state)
+        ).length;
         if (activeProjEl) activeProjEl.textContent = activeCount;
 
-        // Average value realized
         let sumPcts = 0;
         let countBens = 0;
         state.benefits.forEach(b => {
-            if (!b.isDisbenefit && isBenefitInHierarchy(b.id)) {
+            if (!b.isDisbenefit && isBenefitInHierarchy(b, state)) {
                 countBens++;
                 sumPcts += ((b.metric.current - b.metric.baseline) / (b.metric.target - b.metric.baseline)) * 100;
             }
         });
         const avgPct = countBens > 0 ? Math.round(sumPcts / countBens) : 0;
         if (valRealizedEl) valRealizedEl.textContent = `${avgPct}%`;
+    }
+
+    updateHierarchyDropdown(state) {
+        const level = state.scenario.activeHierarchyLevel || "enterprise";
+        const nodeId = state.scenario.activeNodeId;
+
+        // Mark the two static items (enterprise, portfolio)
+        document.querySelectorAll(".dropdown-item[data-level='enterprise'], .dropdown-item[data-level='portfolio']").forEach(el => {
+            el.classList.toggle("active-item", el.dataset.level === level && !nodeId);
+        });
+
+        // Populate program items dynamically
+        const programContainer = document.getElementById("program-dynamic-items");
+        if (programContainer) {
+            programContainer.innerHTML = Object.entries(PROGRAM_GROUPS).map(([id, g]) => {
+                const isActive = level === "program" && nodeId === id;
+                return `
+                    <div class="dropdown-item dropdown-sub-item ${isActive ? 'active-item' : ''}" data-level="program" data-node-id="${id}">
+                        <span class="material-symbols-outlined" style="font-size:16px;">${g.icon}</span>
+                        <div class="item-text">
+                            <h4>${escapeHtml(g.name)}</h4>
+                            <small>${g.scopeIds.length} projects</small>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Populate project (scope) items dynamically from state
+        const projectContainer = document.getElementById("project-dynamic-items");
+        if (projectContainer) {
+            const scopes = state.scopes.filter(s => !s.isArchived);
+            projectContainer.innerHTML = scopes.map(s => {
+                const isActive = level === "project" && nodeId === s.id;
+                return `
+                    <div class="dropdown-item dropdown-sub-item ${isActive ? 'active-item' : ''}" data-level="project" data-node-id="${s.id}">
+                        <span class="material-symbols-outlined" style="font-size:16px;">article</span>
+                        <div class="item-text">
+                            <h4>${escapeHtml(s.name)}</h4>
+                            <small>${escapeHtml(s.status)} · ${s.progress}% complete</small>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
     }
 
     populateInitialPulseEvents() {

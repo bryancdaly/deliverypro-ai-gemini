@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - RESOURCE ALLOCATION COMPONENT
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, isScopeInHierarchy } from './store.js';
 
 class ResourceView {
     constructor() {
@@ -28,13 +28,10 @@ class ResourceView {
                         const isOverloaded = r.allocated > r.maxCapacity;
                         
                         // Get active tasks for this resource
-                        const level = state.scenario.activeHierarchyLevel || "enterprise";
                         const activeProjectIds = state.scenario.includedProjectIds;
                         const resourceTasks = state.tasks.filter(t => {
                             if (t.isArchived || t.assignee !== r.name || t.status === 'done' || !activeProjectIds.includes(t.scopeId)) return false;
-                            if (level === "program" && !["scope-route-optimization", "scope-transport-fleet"].includes(t.scopeId)) return false;
-                            if (level === "project" && !["scope-route-optimization"].includes(t.scopeId)) return false;
-                            return true;
+                            return isScopeInHierarchy(t.scopeId, state);
                         });
 
                         return `

@@ -7,6 +7,40 @@ function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Predefined program groups — each groups one or more project scopes under a program node.
+// Extend this object to add new programs; scopeIds lists the member project scope IDs.
+const PROGRAM_GROUPS = {
+    "prog-logistics-fleet": {
+        name: "Logistics & Fleet",
+        icon: "account_tree",
+        scopeIds: ["scope-route-optimization", "scope-transport-fleet"]
+    }
+};
+
+// Canonical hierarchy filter — use this instead of copy-pasting in every view.
+function isScopeInHierarchy(scopeId, state) {
+    const level = (state.scenario && state.scenario.activeHierarchyLevel) || "enterprise";
+    const nodeId = state.scenario && state.scenario.activeNodeId;
+    if (level === "enterprise" || level === "portfolio") return true;
+    if (level === "program") {
+        if (!nodeId) return true; // graceful fallback when no node selected
+        const group = PROGRAM_GROUPS[nodeId];
+        return group ? group.scopeIds.includes(scopeId) : true;
+    }
+    if (level === "project") {
+        if (!nodeId) return true; // graceful fallback
+        return scopeId === nodeId;
+    }
+    return true;
+}
+
+// A benefit is in scope if any of its dependent project scopes are visible at this level.
+function isBenefitInHierarchy(benefit, state) {
+    const level = (state.scenario && state.scenario.activeHierarchyLevel) || "enterprise";
+    if (level === "enterprise" || level === "portfolio") return true;
+    return (benefit.scopeDependencies || []).some(id => isScopeInHierarchy(id, state));
+}
+
 class DeliveryProStore {
     constructor() {
         // Initial core state
@@ -247,7 +281,8 @@ class DeliveryProStore {
                     "scope-safety-module": 0
                 },
                 realizationMonthSlider: 0, // Staggered timeline months (0 - 36)
-                activeHierarchyLevel: "enterprise" // "enterprise" | "portfolio" | "program" | "project"
+                activeHierarchyLevel: "enterprise", // "enterprise" | "portfolio" | "program" | "project"
+                activeNodeId: null // program group key or scope ID when level is "program"/"project"
             },
 
             // Live Scrolling Pulse Activity Feed Logs
@@ -353,16 +388,9 @@ class DeliveryProStore {
         s.resources.forEach(r => {
             r.allocated = 0;
         });
-        const level = s.scenario.activeHierarchyLevel || "enterprise";
-        const isScopeInHierarchy = (scopeId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
-            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
-            return true;
-        };
         s.scopes.forEach(scope => {
             // If project is active/included in current scenario and is in scope for active hierarchy level
-            if (s.scenario.includedProjectIds.includes(scope.id) && scope.status !== "Proposed" && isScopeInHierarchy(scope.id)) {
+            if (s.scenario.includedProjectIds.includes(scope.id) && scope.status !== "Proposed" && isScopeInHierarchy(scope.id, s)) {
                 const scopeTasks = s.tasks.filter(t => t.scopeId === scope.id && t.status !== "done");
                 scopeTasks.forEach(task => {
                     const resource = s.resources.find(res => res.name === task.assignee);
@@ -669,4 +697,4 @@ class DeliveryProStore {
 const store = new DeliveryProStore();
 if (typeof window !== 'undefined') window.__store = store;
 export default store;
-export { store, escapeHtml };
+export { store, escapeHtml, PROGRAM_GROUPS, isScopeInHierarchy, isBenefitInHierarchy };

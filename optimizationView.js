@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - PORTFOLIO OPTIMIZER COMPONENT
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, isScopeInHierarchy } from './store.js';
 
 class OptimizationView {
     constructor() {
@@ -13,14 +13,7 @@ class OptimizationView {
         const container = document.getElementById(this.containerId);
         if (!container) return;
 
-        const level = state.scenario.activeHierarchyLevel || "enterprise";
-
-        const isScopeInHierarchy = (scopeId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
-            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
-            return true;
-        };
+        const scopeInHierarchy = (scopeId) => isScopeInHierarchy(scopeId, state);
 
         // Calculate active budget commitments
         let totalActiveCost = 0;
@@ -28,7 +21,7 @@ class OptimizationView {
 
         state.scopes.forEach(scope => {
             if (scope.isArchived) return;
-            if (!isScopeInHierarchy(scope.id)) return;
+            if (!scopeInHierarchy(scope.id)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             if (isIncluded && scope.status !== "Proposed") {
                 totalActiveCost += scope.financials.capEx.plan + scope.financials.opEx.plan;
@@ -210,17 +203,9 @@ class OptimizationView {
         svg.appendChild(curve);
 
         // Plot dots for each scope project
-        const level = state.scenario.activeHierarchyLevel || "enterprise";
-        const isScopeInHierarchy = (scopeId) => {
-            if (level === "enterprise" || level === "portfolio") return true;
-            if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
-            if (level === "project") return ["scope-route-optimization"].includes(scopeId);
-            return true;
-        };
-
         state.scopes.forEach(scope => {
             if (scope.isArchived) return;
-            if (!isScopeInHierarchy(scope.id)) return;
+            if (!scopeInHierarchy(scope.id)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             const x = getX(scope.executionRisk);
             const y = getY(scope.expectedValue);
@@ -319,14 +304,7 @@ class OptimizationView {
                     const fteLimit = state.scenario.fteCap;
 
                     // Simulated Knapsack Solver maximizing Expected Strategic Value under cost & FTE constraints
-                    const isScopeInHierarchy = (scopeId) => {
-                        const level = state.scenario.activeHierarchyLevel || "enterprise";
-                        if (level === "enterprise" || level === "portfolio") return true;
-                        if (level === "program") return ["scope-route-optimization", "scope-transport-fleet"].includes(scopeId);
-                        if (level === "project") return ["scope-route-optimization"].includes(scopeId);
-                        return true;
-                    };
-                    let availableScopes = [...state.scopes].filter(s => !s.isArchived && s.status !== "Proposed" && isScopeInHierarchy(s.id));
+                    let availableScopes = [...state.scopes].filter(s => !s.isArchived && s.status !== "Proposed" && scopeInHierarchy(s.id));
                     
                     // Sort by expected value efficiency (expectedValue / CapEx Cost)
                     availableScopes.sort((a,b) => {

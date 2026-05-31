@@ -488,6 +488,35 @@ h1, h2, h3, h4, h5, h6 {
     line-height: 1.2;
 }
 
+.dropdown-section-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px 3px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    border-top: 1px solid var(--glass-border);
+    margin-top: 2px;
+    pointer-events: none;
+    user-select: none;
+}
+.dropdown-section-label .material-symbols-outlined {
+    font-size: 11px;
+}
+
+.dropdown-sub-item {
+    padding-left: 20px;
+}
+.dropdown-sub-item h4 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
 /* Sidebar navigation low-relevance fading */
 .nav-item.low-relevance {
     opacity: 0.42;

@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - AI GANTT CHART COMPONENT
    ========================================================================== */
 
-import { store } from './store.js';
+import { store, isScopeInHierarchy } from './store.js';
 
 class GanttView {
     constructor() {
@@ -15,13 +15,9 @@ class GanttView {
 
         const level = state.scenario.activeHierarchyLevel || "enterprise";
         const activeProjectIds = state.scenario.includedProjectIds;
-        let activeScopes = state.scopes.filter(s => !s.isArchived && activeProjectIds.includes(s.id));
-
-        if (level === "program") {
-            activeScopes = activeScopes.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
-        } else if (level === "project") {
-            activeScopes = activeScopes.filter(s => ["scope-route-optimization"].includes(s.id));
-        }
+        let activeScopes = state.scopes.filter(s =>
+            !s.isArchived && activeProjectIds.includes(s.id) && isScopeInHierarchy(s.id, state)
+        );
 
         // Render gantt layout
         container.innerHTML = `
@@ -103,13 +99,9 @@ class GanttView {
         const recText = document.getElementById("mitigation-recommendation-text");
 
         const redrawBars = (localOffsets) => {
-            const level = state.scenario.activeHierarchyLevel || "enterprise";
-            let scopesToDraw = state.scopes.filter(s => !s.isArchived && state.scenario.includedProjectIds.includes(s.id));
-            if (level === "program") {
-                scopesToDraw = scopesToDraw.filter(s => ["scope-route-optimization", "scope-transport-fleet"].includes(s.id));
-            } else if (level === "project") {
-                scopesToDraw = scopesToDraw.filter(s => ["scope-route-optimization"].includes(s.id));
-            }
+            let scopesToDraw = state.scopes.filter(s =>
+                !s.isArchived && state.scenario.includedProjectIds.includes(s.id) && isScopeInHierarchy(s.id, state)
+            );
             const ganttGrid = document.querySelector(".gantt-timeline-grid");
             if (ganttGrid) {
                 ganttGrid.innerHTML = scopesToDraw.map(s => {
