@@ -24,7 +24,8 @@ function isScopeInHierarchy(scopeId, state) {
     if (level === "enterprise" || level === "portfolio") return true;
     if (level === "program") {
         if (!nodeId) return true; // graceful fallback when no node selected
-        const group = PROGRAM_GROUPS[nodeId];
+        const groups = (state && state.programGroups) || PROGRAM_GROUPS;
+        const group = groups[nodeId];
         return group ? group.scopeIds.includes(scopeId) : true;
     }
     if (level === "project") {
@@ -194,20 +195,23 @@ class DeliveryProStore {
             // Tier 5: Project Activities / Tasks
             tasks: [
                 // Tasks for Route Optimization
-                { id: "task-route-1", scopeId: "scope-route-optimization", title: "Establish API integrations with core ERP logistics software", assignee: "Sarah Connor", status: "done", weight: 2 },
-                { id: "task-route-2", scopeId: "scope-route-optimization", title: "Develop machine learning path-finding routing algorithms", assignee: "Bryan Lee", status: "review", weight: 3 },
-                { id: "task-route-3", scopeId: "scope-route-optimization", title: "Validate routing safety maps with regional transportation rules", assignee: "Bryan Lee", status: "in_progress", weight: 2 },
-                { id: "task-route-4", scopeId: "scope-route-optimization", title: "Conduct driver UI beta testing and collect application feedback", assignee: "John Doe", status: "todo", weight: 1 },
-                
+                { id: "task-route-1", scopeId: "scope-route-optimization", title: "Establish API integrations with core ERP logistics software", assignee: "Sarah Connor", status: "done", weight: 2, startDate: "2024-02-01", endDate: "2024-03-15", isMilestone: false, dependencies: [] },
+                { id: "task-route-2", scopeId: "scope-route-optimization", title: "Develop machine learning path-finding routing algorithms", assignee: "Bryan Lee", status: "review", weight: 3, startDate: "2024-03-15", endDate: "2024-06-15", isMilestone: false, dependencies: ["task-route-1"] },
+                { id: "task-route-3", scopeId: "scope-route-optimization", title: "Validate routing safety maps with regional transportation rules", assignee: "Bryan Lee", status: "in_progress", weight: 2, startDate: "2024-06-01", endDate: "2024-08-31", isMilestone: false, dependencies: ["task-route-2"] },
+                { id: "task-route-4", scopeId: "scope-route-optimization", title: "Conduct driver UI beta testing and collect application feedback", assignee: "John Doe", status: "todo", weight: 1, startDate: "2024-08-01", endDate: "2024-10-15", isMilestone: false, dependencies: ["task-route-3"] },
+                { id: "milestone-route-golive", scopeId: "scope-route-optimization", title: "Route Optimization Platform Go-Live", assignee: "Sarah Connor", status: "todo", weight: 1, startDate: "2024-10-31", endDate: "2024-10-31", isMilestone: true, dependencies: ["task-route-4"] },
+
                 // Tasks for Fleet Procurement
-                { id: "task-fleet-1", scopeId: "scope-transport-fleet", title: "Finalize hybrid truck specs & contract terms with supplier", assignee: "Sarah Connor", status: "done", weight: 4 },
-                { id: "task-fleet-2", scopeId: "scope-transport-fleet", title: "Submit purchase orders for first batch of 5 hybrid vehicles", assignee: "Sarah Connor", status: "done", weight: 4 },
-                { id: "task-fleet-3", scopeId: "scope-transport-fleet", title: "Install electric high-capacity charging docks in main warehouse", assignee: "John Doe", status: "in_progress", weight: 3 },
-                { id: "task-fleet-4", scopeId: "scope-transport-fleet", title: "Procure and verify delivery of second batch of 5 commercial fleet vehicles", assignee: "Marcus Aurelius", status: "todo", weight: 5 },
-                
+                { id: "task-fleet-1", scopeId: "scope-transport-fleet", title: "Finalize hybrid truck specs & contract terms with supplier", assignee: "Sarah Connor", status: "done", weight: 4, startDate: "2024-01-15", endDate: "2024-03-01", isMilestone: false, dependencies: [] },
+                { id: "task-fleet-2", scopeId: "scope-transport-fleet", title: "Submit purchase orders for first batch of 5 hybrid vehicles", assignee: "Sarah Connor", status: "done", weight: 4, startDate: "2024-03-01", endDate: "2024-04-30", isMilestone: false, dependencies: ["task-fleet-1"] },
+                { id: "task-fleet-3", scopeId: "scope-transport-fleet", title: "Install electric high-capacity charging docks in main warehouse", assignee: "John Doe", status: "in_progress", weight: 3, startDate: "2024-04-15", endDate: "2024-08-31", isMilestone: false, dependencies: ["task-fleet-1"] },
+                { id: "task-fleet-4", scopeId: "scope-transport-fleet", title: "Procure and verify delivery of second batch of 5 commercial fleet vehicles", assignee: "Marcus Aurelius", status: "todo", weight: 5, startDate: "2024-09-01", endDate: "2025-03-01", isMilestone: false, dependencies: ["task-fleet-2"] },
+                { id: "milestone-fleet-deployed", scopeId: "scope-transport-fleet", title: "Full Hybrid Fleet Deployed & Commissioned", assignee: "Sarah Connor", status: "todo", weight: 1, startDate: "2025-03-31", endDate: "2025-03-31", isMilestone: true, dependencies: ["task-fleet-4", "task-fleet-3"] },
+
                 // Tasks for Warehouse Safety Module
-                { id: "task-safety-1", scopeId: "scope-safety-module", title: "Draft automated compliance checklist workflows", assignee: "John Doe", status: "in_progress", weight: 2 },
-                { id: "task-safety-2", scopeId: "scope-safety-module", title: "Install electric locks and smart gates on warehouse bays", assignee: "John Doe", status: "todo", weight: 3 }
+                { id: "task-safety-1", scopeId: "scope-safety-module", title: "Draft automated compliance checklist workflows", assignee: "John Doe", status: "in_progress", weight: 2, startDate: "2024-07-01", endDate: "2024-10-31", isMilestone: false, dependencies: [] },
+                { id: "task-safety-2", scopeId: "scope-safety-module", title: "Install electric locks and smart gates on warehouse bays", assignee: "John Doe", status: "todo", weight: 3, startDate: "2024-08-01", endDate: "2024-12-15", isMilestone: false, dependencies: ["task-safety-1"] },
+                { id: "milestone-safety-cert", scopeId: "scope-safety-module", title: "Safety Compliance Certification Achieved", assignee: "John Doe", status: "todo", weight: 1, startDate: "2024-12-31", endDate: "2024-12-31", isMilestone: true, dependencies: ["task-safety-2"] }
             ],
 
             // Resource Store
@@ -285,6 +289,9 @@ class DeliveryProStore {
                 activeNodeId: null // program group key or scope ID when level is "program"/"project"
             },
 
+            // Mutable program group registry — persisted in state so promotions survive refresh
+            programGroups: JSON.parse(JSON.stringify(PROGRAM_GROUPS)),
+
             // Live Scrolling Pulse Activity Feed Logs
             pulseFeed: [
                 { id: "log-1", time: "14:15", type: "system", msg: "AI Risk Mitigator analyzed OKR 1: Alignment status at 92% health." },
@@ -316,6 +323,18 @@ class DeliveryProStore {
                     // Migrate older saves that may lack these arrays
                     if (!Array.isArray(parsed.pulseFeed)) parsed.pulseFeed = this.state.pulseFeed;
                     if (!Array.isArray(parsed.auditLog)) parsed.auditLog = [];
+                    if (!Array.isArray(parsed.intakeRequests)) parsed.intakeRequests = this.state.intakeRequests;
+                    if (!parsed.programGroups || typeof parsed.programGroups !== 'object') parsed.programGroups = JSON.parse(JSON.stringify(PROGRAM_GROUPS));
+                    // Migrate tasks to add new schedule fields
+                    if (Array.isArray(parsed.tasks)) {
+                        parsed.tasks.forEach(t => {
+                            if (t.startDate === undefined) t.startDate = "";
+                            if (t.endDate === undefined) t.endDate = "";
+                            if (t.isMilestone === undefined) t.isMilestone = false;
+                            if (!Array.isArray(t.dependencies)) t.dependencies = [];
+                            if (t.parentTaskId === undefined) t.parentTaskId = null;
+                        });
+                    }
                     this.state = parsed;
                 } else {
                     console.warn("Saved portfolio state is incomplete or outdated. Discarding to load fresh defaults.");
@@ -578,8 +597,9 @@ class DeliveryProStore {
             this.state.scopes = restoredState.scopes;
             this.state.tasks = restoredState.tasks;
             this.state.resources = restoredState.resources;
-            this.state.intakeRequests = restoredState.intakeRequests;
+            this.state.intakeRequests = restoredState.intakeRequests || [];
             this.state.scenario = restoredState.scenario;
+            if (restoredState.programGroups) this.state.programGroups = restoredState.programGroups;
 
             // Remove the transaction and all younger transactions to preserve sequential integrity
             this.state.auditLog.splice(0, txIndex + 1);

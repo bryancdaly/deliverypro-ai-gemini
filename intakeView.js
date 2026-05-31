@@ -16,10 +16,16 @@ class IntakeView {
         if (!container) return;
 
         container.innerHTML = `
-            <div class="intake-workspace">
-                <!-- Left Pane: Intake Form -->
-                <div class="glass-panel form-card" style="overflow-y: auto; max-height: calc(100vh - 120px);">
-                    <h3>Intake Capture & AI Alignment</h3>
+            <div class="intake-workspace" style="display:flex;flex-direction:column;gap:16px;">
+
+                <!-- Intake Form Modal -->
+                <div id="intake-form-modal" class="modal-overlay hidden">
+                    <div class="modal-card" style="width:540px;max-width:95vw;">
+                        <div class="modal-header">
+                            <h2>New Project Request</h2>
+                            <button id="intake-modal-close" class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div class="modal-body" style="gap:16px;">
 
                     <div class="form-group">
                         <label for="intake-title">Project Request Title</label>
@@ -90,17 +96,26 @@ class IntakeView {
                         <input type="number" id="intake-effort" min="1" max="60" step="1" value="6" placeholder="e.g. 6">
                     </div>
 
-                    <button id="intake-submit-btn" class="btn btn-primary">
-                        <span class="material-symbols-outlined">add</span>
-                        <span>Submit Project to Sandbox</span>
-                    </button>
+                        </div>
+                        <div class="modal-footer" style="justify-content:flex-end;">
+                            <button id="intake-submit-btn" class="btn btn-primary">
+                                <span class="material-symbols-outlined">add</span>
+                                <span>Submit to Sandbox</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Right Pane: Vetting Sandbox Board -->
-                <div class="glass-panel" style="display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3>Prioritization Vetting Sandbox</h3>
-                        <span class="tier-badge" style="background: hsla(200,85%,55%,0.1); color: var(--color-info);">Idea Board — click any card to score</span>
+                <!-- Sandbox Board (full width) -->
+                <div class="glass-panel" style="display:flex;flex-direction:column;gap:16px;overflow:hidden;flex:1;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <h3 style="margin:0;">Prioritization Vetting Sandbox</h3>
+                            <span class="tier-badge" style="background:hsla(200,85%,55%,0.1);color:var(--color-info);">Idea Board — click any card to score</span>
+                        </div>
+                        <button id="intake-new-btn" class="btn btn-primary" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 16px;">
+                            <span class="material-symbols-outlined" style="font-size:15px;">add</span>New Request
+                        </button>
                     </div>
 
                     <div class="sandbox-columns-grid" id="sandbox-columns-grid">
@@ -158,6 +173,17 @@ class IntakeView {
                                 <div id="score-wsjf-val" style="font-size: 22px; font-weight: 700; color: var(--color-success); margin-top:6px;">2.00</div>
                                 <p class="help-text" style="margin:0; font-size:9px;">(Fit + ROI) / Complexity</p>
                             </div>
+                        </div>
+
+                        <!-- Program / Hierarchy Assignment -->
+                        <div style="margin-top: 4px;">
+                            <label style="font-size: 11px; color: var(--color-text-secondary); font-weight: 600; display: block; margin-bottom: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle; margin-right: 4px;">account_tree</span>
+                                Assign to Program Group
+                            </label>
+                            <select id="vet-program-select" style="width: 100%; padding: 7px 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--color-text-primary); font-size: 13px; font-family: inherit;">
+                                <option value="">Standalone Project (No Program)</option>
+                            </select>
                         </div>
 
                         <!-- AI Feasibility Analysis Panel -->
@@ -270,6 +296,17 @@ class IntakeView {
             }
         }
 
+        // Populate program group selector
+        const programSelect = document.getElementById("vet-program-select");
+        if (programSelect) {
+            const groups = store.state.programGroups || {};
+            programSelect.innerHTML = `<option value="">Standalone Project (No Program)</option>` +
+                Object.entries(groups).map(([id, g]) =>
+                    `<option value="${id}">${g.name}</option>`
+                ).join('');
+            programSelect.value = "";
+        }
+
         if (modal) modal.classList.remove("hidden");
     }
 
@@ -284,6 +321,18 @@ class IntakeView {
     }
 
     bindEvents() {
+        // --- Open intake form modal ---
+        const intakeModal = document.getElementById('intake-form-modal');
+        document.getElementById('intake-new-btn')?.addEventListener('click', () => {
+            intakeModal?.classList.remove('hidden');
+        });
+        document.getElementById('intake-modal-close')?.addEventListener('click', () => {
+            intakeModal?.classList.add('hidden');
+        });
+        intakeModal?.addEventListener('click', e => {
+            if (e.target === intakeModal) intakeModal.classList.add('hidden');
+        });
+
         // --- AI live alignment on description typing ---
         const descInput = document.getElementById("intake-desc");
         const alignmentCard = document.getElementById("intake-ai-alignment");
@@ -394,6 +443,8 @@ class IntakeView {
                 document.getElementById("intake-effort").value = "6";
                 alignmentCard?.classList.add("hidden");
                 estimatesCard?.classList.add("hidden");
+                // Close the modal
+                document.getElementById('intake-form-modal')?.classList.add('hidden');
 
                 this.renderSandboxCards(store.state.intakeRequests);
             });
@@ -454,11 +505,14 @@ class IntakeView {
             const finalFit = parseFloat(document.getElementById("score-fit")?.value) || req.scores.stratFit;
             const finalRoi = parseFloat(document.getElementById("score-roi")?.value) || req.scores.roi;
             const finalComp = Math.max(parseFloat(document.getElementById("score-complex")?.value) || req.scores.complexity, 0.1);
-            const finalWsjf = parseFloat(((finalFit + finalRoi) / finalComp).toFixed(2));
+
+            // Read program selection before commitTransaction (DOM is replaced by notifySubscribers)
+            const selectedProgramId = document.getElementById("vet-program-select")?.value || "";
+            const capturedVettingId = this._activeVettingId;
 
             store.commitTransaction(`Promote "${req.title}" to active portfolio`, "Vetting Board", (state) => {
                 // 1. Remove from intake
-                state.intakeRequests = state.intakeRequests.filter(r => r.id !== this._activeVettingId);
+                state.intakeRequests = state.intakeRequests.filter(r => r.id !== capturedVettingId);
 
                 // 2. Create new Scope node
                 const newScopeId = "scope-" + Date.now();
@@ -497,17 +551,25 @@ class IntakeView {
                 const alignedBen = state.benefits.find(b => b.id === (isTransport ? 'ben-transport-transition' : 'ben-ops-savings'));
                 if (alignedBen && !alignedBen.scopeDependencies.includes(newScopeId)) {
                     alignedBen.scopeDependencies.push(newScopeId);
+                    if (!alignedBen.contributionWeights) alignedBen.contributionWeights = {};
+                    alignedBen.contributionWeights[newScopeId] = 0; // Weight TBD by PM
                 }
 
                 // 5. Include in optimizer
                 if (!state.scenario.includedProjectIds.includes(newScopeId)) {
                     state.scenario.includedProjectIds.push(newScopeId);
                 }
+
+                // 6. Assign to program group hierarchy
+                if (selectedProgramId && state.programGroups && state.programGroups[selectedProgramId]) {
+                    if (!state.programGroups[selectedProgramId].scopeIds.includes(newScopeId)) {
+                        state.programGroups[selectedProgramId].scopeIds.push(newScopeId);
+                    }
+                }
             });
 
-            modal?.classList.add("hidden");
+            // notifySubscribers() inside commitTransaction already re-renders the view
             this._activeVettingId = null;
-            this.render(store.state);
         });
     }
 }

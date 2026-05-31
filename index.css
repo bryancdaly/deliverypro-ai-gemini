@@ -517,17 +517,7 @@ h1, h2, h3, h4, h5, h6 {
     max-width: 180px;
 }
 
-/* Sidebar navigation low-relevance fading */
-.nav-item.low-relevance {
-    opacity: 0.42;
-    border-style: dashed;
-    border-color: transparent;
-}
-.nav-item.low-relevance:hover {
-    opacity: 0.9;
-    border-color: var(--glass-border);
-    border-style: solid;
-}
+/* Sidebar navigation low-relevance fading — removed; all nav items display equally */
 
 /* Strategic Contribution Inspector Modal Styles */
 .contrib-header-info {
@@ -1099,6 +1089,8 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
     z-index: 100;
     transition: opacity 0.3s ease;
+    overflow-y: auto;
+    padding: 20px 0;
 }
 
 .modal-overlay.hidden {
@@ -1113,6 +1105,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--glass-shadow);
     width: 480px;
     max-width: 90vw;
+    max-height: calc(100vh - 40px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1136,6 +1129,8 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow-y: auto;
+    flex: 1 1 auto;
 }
 
 .form-group {
@@ -1723,9 +1718,10 @@ h1, h2, h3, h4, h5, h6 {
    DEMAND & INTAKE FUNNEL VIEW
    ========================================================================== */
 .intake-workspace {
-    display: grid;
-    grid-template-columns: 1.2fr 2fr;
-    gap: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
 }
 
 .form-card {
@@ -2263,11 +2259,11 @@ h1, h2, h3, h4, h5, h6 {
 /* Gantt Chart Matrix view */
 .gantt-chart-wrap {
     display: grid;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 260px 1fr;
     border: 1px solid var(--glass-border);
     border-radius: var(--border-radius-lg);
     background: var(--bg-card);
-    height: 500px;
+    min-height: 300px;
     overflow: hidden;
 }
 
@@ -2290,6 +2286,7 @@ h1, h2, h3, h4, h5, h6 {
 .gantt-left-list {
     flex-grow: 1;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .gantt-name-row {
@@ -2312,13 +2309,20 @@ h1, h2, h3, h4, h5, h6 {
     height: 48px;
     border-bottom: 1px solid var(--glass-border);
     display: flex;
-    overflow: hidden;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    flex-shrink: 0;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE */
 }
+.gantt-timeline-header::-webkit-scrollbar { display: none; }
 
 .gantt-timeline-grid {
     flex-grow: 1;
     overflow: auto;
     position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
 }
 
 .gantt-row-line {
@@ -2341,6 +2345,111 @@ h1, h2, h3, h4, h5, h6 {
 .gantt-bar:hover {
     filter: brightness(1.1);
     box-shadow: 0 4px 15px hsla(250, 85%, 58%, 0.2);
+}
+
+/* WBS Level selector */
+.gantt-level-selector {
+    display: flex;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+.gantt-level-btn {
+    background: none;
+    border: none;
+    border-right: 1px solid var(--glass-border);
+    color: var(--color-text-muted);
+    font-family: 'Outfit', inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 11px;
+    cursor: pointer;
+    transition: var(--transition-quick);
+    white-space: nowrap;
+}
+.gantt-level-btn:last-child { border-right: none; }
+.gantt-level-btn:hover { color: var(--accent-indigo); background: hsla(250, 85%, 58%, 0.06); }
+.gantt-level-btn.active {
+    background: hsla(250, 85%, 58%, 0.12);
+    color: var(--accent-indigo);
+}
+
+/* Scope summary bar row — slightly taller background to visually separate groups */
+.gantt-scope-bar-row {
+    background: hsla(250, 85%, 58%, 0.02);
+}
+.gantt-scope-summary-bar {
+    height: 8px;
+    top: 20px;
+    border-radius: 2px;
+    background: var(--accent-indigo);
+    opacity: 0.25;
+}
+
+/* Scope name row in left pane */
+.gantt-scope-row {
+    background: hsla(250, 85%, 58%, 0.03);
+    border-bottom: 1px solid var(--glass-border) !important;
+    gap: 7px;
+    font-weight: 700;
+}
+.gantt-task-name-row {
+    gap: 0;
+}
+
+/* WBS num label inside name row */
+.gantt-wbs-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+.gantt-task-label {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+}
+
+/* Bar label text inside bar */
+.gantt-bar-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 6px;
+    line-height: 24px;
+    display: block;
+    pointer-events: none;
+}
+
+/* Milestone diamond marker on timeline */
+.gantt-milestone-marker {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--accent-indigo);
+    cursor: default;
+    line-height: 1;
+}
+
+/* Month column header cell */
+.gantt-month-col {
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 /* ==========================================================================
@@ -2566,6 +2675,377 @@ h1, h2, h3, h4, h5, h6 {
     to {
         background-position: -200% 0;
     }
+}
+
+/* ==========================================================================
+   WBS SCHEDULE VIEW
+   ========================================================================== */
+
+.schedule-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: calc(100vh - 135px);
+}
+
+.schedule-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.schedule-table-wrap {
+    overflow: auto;
+    overflow-x: scroll;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--bg-card);
+    flex: 1;
+    min-height: 0;
+    /* Ensure the border-radius clips the scrolling content */
+    isolation: isolate;
+}
+
+.schedule-table {
+    min-width: 920px;
+    width: max-content;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.schedule-table thead th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    border-bottom: 2px solid var(--glass-border);
+    background: var(--bg-card);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+    z-index: 2;
+}
+
+.schedule-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--glass-border);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Name column is the only one allowed to wrap/truncate */
+.schedule-table td:nth-child(4) {
+    white-space: normal;
+    min-width: 180px;
+    max-width: 300px;
+}
+
+/* Scope group header rows */
+.wbs-group-row {
+    background: hsla(250, 85%, 58%, 0.03);
+}
+
+.wbs-group-row td {
+    padding: 11px 12px;
+    border-bottom: 2px solid var(--glass-border);
+    border-top: 2px solid var(--glass-border);
+}
+
+/* Task rows */
+.wbs-task-row:hover,
+.wbs-milestone-row:hover {
+    background: var(--bg-card-hover);
+    cursor: pointer;
+}
+
+/* Milestone rows — subtle indigo tint */
+.wbs-milestone-row {
+    background: hsla(250, 85%, 58%, 0.025);
+}
+
+.milestone-diamond {
+    color: var(--accent-indigo);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.wbs-milestone-title {
+    color: var(--accent-indigo);
+    font-weight: 600;
+}
+
+.wbs-num {
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.wbs-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wbs-task-title {
+    font-size: 12px;
+    color: var(--color-text-primary);
+}
+
+.wbs-weight-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    background: hsla(0, 0%, 100%, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.wbs-date {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.wbs-dur {
+    color: var(--color-text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.wbs-assignee {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.wbs-deps {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.dep-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-indigo);
+    background: hsla(250, 85%, 58%, 0.08);
+    border: 1px solid hsla(250, 85%, 58%, 0.2);
+    border-radius: 4px;
+    padding: 2px 5px;
+    cursor: default;
+    white-space: nowrap;
+}
+
+.wbs-status {
+    white-space: nowrap;
+}
+
+/* Drag & drop visual feedback */
+.wbs-dragging {
+    opacity: 0.35;
+}
+
+.wbs-drag-over-top td {
+    box-shadow: inset 0 3px 0 0 var(--accent-indigo);
+}
+
+.wbs-drag-over-bottom td {
+    box-shadow: inset 0 -3px 0 0 var(--accent-indigo);
+}
+
+.wbs-drag-handle {
+    width: 28px;
+    text-align: center;
+    cursor: grab;
+    padding-left: 8px !important;
+    user-select: none;
+}
+
+.wbs-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Inline add buttons inside scope group header */
+.wbs-inline-add-btn {
+    background: none;
+    border: 1px solid var(--glass-border);
+    color: var(--color-text-muted);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: var(--transition-quick);
+    font-family: inherit;
+    font-weight: 600;
+}
+
+.wbs-inline-add-btn:hover {
+    border-color: var(--accent-indigo);
+    color: var(--accent-indigo);
+    background: hsla(250, 85%, 58%, 0.05);
+}
+
+/* ── Insert-between-rows hover rows ─────────────────────────────────── */
+.wbs-insert-row { visibility: hidden; height: 0; }
+.wbs-insert-row td { padding: 0; border: none; }
+.wbs-insert-row-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.15s, height 0.15s;
+}
+.wbs-task-row:hover + .wbs-insert-row,
+.wbs-milestone-row:hover + .wbs-insert-row,
+.wbs-insert-row:hover {
+    visibility: visible;
+    height: auto;
+}
+.wbs-task-row:hover + .wbs-insert-row .wbs-insert-row-inner,
+.wbs-milestone-row:hover + .wbs-insert-row .wbs-insert-row-inner,
+.wbs-insert-row:hover .wbs-insert-row-inner {
+    opacity: 1;
+    height: auto;
+}
+.wbs-insert-btn {
+    background: none;
+    border: 1px dashed var(--glass-border);
+    color: var(--color-text-muted);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: inherit;
+    transition: var(--transition-quick);
+}
+.wbs-insert-btn:hover {
+    border-color: var(--accent-indigo);
+    color: var(--accent-indigo);
+    background: hsla(250, 85%, 58%, 0.05);
+    border-style: solid;
+}
+.wbs-insert-milestone-btn {
+    border-color: hsla(250, 85%, 58%, 0.3);
+    color: var(--accent-indigo);
+}
+.wbs-insert-subtask-btn {
+    border-color: hsla(0, 0%, 100%, 0.1);
+}
+
+/* ── Nesting indent connector ────────────────────────────────────────── */
+.wbs-indent-connector {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-left: 2px solid var(--glass-border);
+    border-bottom: 2px solid var(--glass-border);
+    margin-right: 4px;
+    margin-bottom: -4px;
+    flex-shrink: 0;
+}
+
+/* ── Typeahead deps widget ───────────────────────────────────────────── */
+.deps-typeahead {
+    position: relative;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    background: hsla(0, 0%, 100%, 0.02);
+    padding: 6px 8px;
+    min-height: 36px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: flex-start;
+    cursor: text;
+}
+.deps-typeahead:focus-within { border-color: var(--accent-indigo); }
+.deps-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.dep-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: hsla(250, 85%, 58%, 0.1);
+    border: 1px solid hsla(250, 85%, 58%, 0.25);
+    color: var(--accent-indigo);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.dep-tag-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    margin-left: 2px;
+    opacity: 0.6;
+}
+.dep-tag-remove:hover { opacity: 1; }
+.deps-search-input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-family: inherit;
+    min-width: 160px;
+    flex: 1;
+    padding: 2px 0;
+}
+.deps-search-input::placeholder { color: var(--color-text-muted); }
+.deps-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.deps-dropdown.hidden { display: none; }
+.deps-dropdown-item {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.deps-dropdown-item:hover {
+    background: var(--bg-card-hover);
+    color: var(--color-text-primary);
+}
+.deps-dropdown-scope {
+    color: var(--accent-indigo);
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================

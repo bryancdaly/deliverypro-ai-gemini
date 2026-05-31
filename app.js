@@ -8,6 +8,7 @@ import IntakeView from './intakeView.js';
 import OptimizationView from './optimizationView.js';
 import FinanceView from './financeView.js';
 import KanbanView from './kanbanView.js';
+import ScheduleView from './scheduleView.js';
 import GanttView from './ganttView.js';
 import ResourceView from './resourceView.js';
 import CopilotView from './copilotView.js';
@@ -24,6 +25,7 @@ class DeliveryProApp {
             optimizer: new OptimizationView(),
             finance: new FinanceView(),
             kanban: new KanbanView(),
+            schedule: new ScheduleView(),
             gantt: new GanttView(),
             resources: new ResourceView(),
             audit: new AuditView()
@@ -122,7 +124,7 @@ class DeliveryProApp {
 
     handleHashRoute() {
         const hash = window.location.hash.replace("#", "");
-        const validViews = ["strategy", "intake", "optimizer", "finance", "kanban", "gantt", "resources", "synthesizer", "audit"];
+        const validViews = ["strategy", "intake", "optimizer", "finance", "kanban", "schedule", "gantt", "resources", "synthesizer", "audit"];
         
         let targetView = "strategy";
         if (hash && validViews.includes(hash)) {
@@ -153,8 +155,7 @@ class DeliveryProApp {
             intake: { title: "Demand & Intake Funnel", desc: "Intelligent front-door capturing, scoring, and vetting project proposals" },
             optimizer: { title: "Portfolio Optimizer", desc: "Strategic 'What-If' scenario sandboxing and Efficient Frontier solvers" },
             finance: { title: "Financial & Value Board", desc: "CapEx & OpEx ledger tracking, financial forecasting, and post-launch value realizations" },
-            kanban: { title: "Sprint Kanban Board", desc: "Agile sprint execution and task-level state tracking boards" },
-            gantt: { title: "AI Gantt Timeline", desc: "Horizontal schedule delivery timelines, milestone phase gates, and critical path analysis" },
+            kanban: { title: "Sprint Kanban Board", desc: "Agile sprint execution and task-level state tracking boards" },            schedule: { title: "WBS Schedule", desc: "Work breakdown structure with tasks, milestones, dates, and dependencies" },            gantt: { title: "AI Gantt Timeline", desc: "Horizontal schedule delivery timelines, milestone phase gates, and critical path analysis" },
             resources: { title: "Resource Allocator", desc: "Weekly workload bandwidth matrices and allocations tracking" },
             synthesizer: { title: "Executive Synthesizer", desc: "One-click executive briefs and print-ready presentation briefs" },
             audit: { title: "Audit Log Ledger", desc: "Chronological transaction snapshots log and rollback controllers" }
@@ -181,7 +182,7 @@ class DeliveryProApp {
             if (activeLevel === "enterprise") return { name: "Enterprise (Global Corp)", icon: "business" };
             if (activeLevel === "portfolio") return { name: "Portfolio (Sustainable Agriculture)", icon: "donut_large" };
             if (activeLevel === "program") {
-                const group = nodeId && PROGRAM_GROUPS[nodeId];
+                const group = nodeId && (state.programGroups || PROGRAM_GROUPS)[nodeId];
                 return { name: group ? `Program: ${group.name}` : "Program", icon: "account_tree" };
             }
             if (activeLevel === "project") {
@@ -254,7 +255,7 @@ class DeliveryProApp {
         // Populate program items dynamically
         const programContainer = document.getElementById("program-dynamic-items");
         if (programContainer) {
-            programContainer.innerHTML = Object.entries(PROGRAM_GROUPS).map(([id, g]) => {
+            programContainer.innerHTML = Object.entries(state.programGroups || PROGRAM_GROUPS).map(([id, g]) => {
                 const isActive = level === "program" && nodeId === id;
                 return `
                     <div class="dropdown-item dropdown-sub-item ${isActive ? 'active-item' : ''}" data-level="program" data-node-id="${id}">
@@ -429,6 +430,36 @@ class DeliveryProApp {
                                 </div>
                             `).join('')}
                         </div>
+                    </div>
+
+                    <!-- Key Milestones -->
+                    <div style="border-top:1px solid var(--glass-border); padding-top:16px;">
+                        <h5 style="text-transform:uppercase; font-size:11px; color:var(--color-text-secondary); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">flag</span>Key Project Milestones
+                        </h5>
+                        ${(() => {
+                            const milestones = state.tasks
+                                .filter(t => t.isMilestone && !t.isArchived)
+                                .sort((a, b) => (a.startDate || '') < (b.startDate || '') ? -1 : 1);
+                            if (!milestones.length) return `<p style="font-size:12px;color:var(--color-text-muted);font-style:italic;padding:8px 0;">No milestones defined.</p>`;
+                            const scopeMap = Object.fromEntries(state.scopes.map(s => [s.id, s.name]));
+                            const statusColor = { 'done': 'var(--color-success)', 'in-progress': 'var(--accent-indigo)', 'to-do': 'var(--color-text-muted)', 'review': 'var(--color-warning)' };
+                            return milestones.map(m => `
+                                <div class="ledger-item" style="padding:10px 16px;">
+                                    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                                        <span style="font-size:11px;color:var(--accent-indigo);flex-shrink:0;">◆</span>
+                                        <div style="min-width:0;">
+                                            <b style="font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.title}</b>
+                                            <small style="color:var(--color-text-muted);font-size:10px;">${scopeMap[m.scopeId] || 'Unknown project'}</small>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                                        <span style="font-size:11px;color:var(--color-text-secondary);">${m.startDate || '—'}</span>
+                                        <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:hsla(0,0%,100%,0.05);color:${statusColor[m.status] || 'var(--color-text-muted)'};">${(m.status || 'to-do').replace(/-/g, ' ').toUpperCase()}</span>
+                                    </div>
+                                </div>
+                            `).join('');
+                        })()}
                     </div>
 
                     <!-- Bullet insights -->
