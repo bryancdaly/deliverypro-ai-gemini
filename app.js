@@ -69,14 +69,6 @@ class DeliveryProApp {
             });
         });
 
-        // Topbar Active Node details click triggers Strategy View
-        const activeNodeBtn = document.getElementById("active-hierarchy-badge");
-        if (activeNodeBtn) {
-            activeNodeBtn.addEventListener("click", () => {
-                window.location.hash = "strategy";
-            });
-        }
-
         // --- STRUCTURAL HIERARCHY SELECTOR EVENTS ---
         const selectorBadge = document.getElementById("active-hierarchy-badge");
         const selectorContainer = document.getElementById("hierarchy-selector-container");
@@ -194,7 +186,7 @@ class DeliveryProApp {
             }
             if (activeLevel === "project") {
                 const scope = nodeId && state.scopes.find(s => s.id === nodeId);
-                return { name: scope ? scope.name : "Project", icon: "article" };
+                return { name: scope ? `Project: ${scope.name}` : "Project", icon: "article" };
             }
             return { name: "Enterprise (Global Corp)", icon: "business" };
         };
