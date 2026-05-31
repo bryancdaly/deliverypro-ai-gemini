@@ -7,25 +7,57 @@ import { store } from './store.js';
 class DeliveryProAIEngine {
     constructor() {
         this.apiConfig = {
-            mode: localStorage.getItem("dp_ai_mode") || "sim", // 'sim' or 'live'
-            apiKey: localStorage.getItem("dp_openrouter_key") || "",
-            model: localStorage.getItem("dp_openrouter_model") || "google/gemini-2.5-pro"
+            mode: localStorage.getItem("dp_ai_mode") || "live", // Default to 'live'; falls back to 'sim' if backend unavailable
+            model: localStorage.getItem("dp_openrouter_model") || "google/gemini-2.5-pro",
+            backendAvailable: false // Will be set by init()
         };
+        this._initPromise = this._autoDetectBackend();
+    }
+
+    // Auto-detect if the Vercel serverless backend proxy is available
+    async _autoDetectBackend() {
+        try {
+            const response = await fetch("/api/models", { method: "GET" });
+            if (response.ok) {
+                this.apiConfig.backendAvailable = true;
+                // If backend is available, ensure we're in live mode
+                if (this.apiConfig.mode !== "live") {
+                    this.apiConfig.mode = "live";
+                    localStorage.setItem("dp_ai_mode", "live");
+                }
+                console.log("[AI Engine] Backend proxy detected. Live OpenRouter mode enabled.");
+            } else {
+                console.warn("[AI Engine] Backend proxy returned non-OK. Falling back to simulation mode.");
+                this.apiConfig.backendAvailable = false;
+                this.apiConfig.mode = "sim";
+            }
+        } catch (e) {
+            console.log("[AI Engine] No backend proxy detected (running locally). Using simulation mode.", e);
+            this.apiConfig.backendAvailable = false;
+            this.apiConfig.mode = "sim";
+        }
+
+        // Update UI status dot
+        this._updateStatusUI();
     }
 
     // Update settings in runtime and save to LocalStorage
-    updateSettings(mode, apiKey, model) {
+    updateSettings(mode, model) {
         this.apiConfig.mode = mode;
-        this.apiConfig.apiKey = apiKey;
         this.apiConfig.model = model;
         
         localStorage.setItem("dp_ai_mode", mode);
-        localStorage.setItem("dp_openrouter_key", apiKey);
         localStorage.setItem("dp_openrouter_model", model);
 
-        // Update dot status on UI
+        this._updateStatusUI();
+    }
+
+    _updateStatusUI() {
         const statusDot = document.getElementById("copilot-pulse-dot");
         const statusTxt = document.getElementById("connection-status");
+        const mode = this.apiConfig.mode;
+        const model = this.apiConfig.model;
+
         if (statusDot) {
             statusDot.className = `status-dot ${mode === 'live' ? 'active-live' : 'active-sim'}`;
         }
@@ -36,6 +68,9 @@ class DeliveryProAIEngine {
 
     // Core Gateway to send prompt to LLM (OpenRouter) or Fallback Simulator
     async sendMessage(prompt) {
+        // Wait for backend detection to complete before sending first message
+        await this._initPromise;
+
         const activeState = store.state;
         
         if (this.apiConfig.mode === "live") {
@@ -43,15 +78,14 @@ class DeliveryProAIEngine {
                 return await this.fetchOpenRouterResponse(prompt, activeState);
             } catch(e) {
                 console.error("OpenRouter API failed, falling back to client-side simulator:", e);
-                // Return fallback and show warning
                 return {
-                    text: `⚠️ <b>OpenRouter API connection failed.</b> Ref: ${e.message}. Toggling temporary simulation fallback.<br><br>` + this.simulateResponse(prompt, activeState).text,
+                    text: `⚠️ <b>OpenRouter API connection failed.</b> Ref: ${e.message}. Returning simulation fallback.<br><br>` + this.simulateResponse(prompt, activeState).text,
                     proposal: this.simulateResponse(prompt, activeState).proposal,
                     isFallback: true
                 };
             }
         } else {
-            // Wait 600ms for realistic thinking feel
+            // Simulation mode - wait 600ms for realistic thinking feel
             await new Promise(r => setTimeout(r, 600));
             return this.simulateResponse(prompt, activeState);
         }
@@ -61,39 +95,6 @@ class DeliveryProAIEngine {
     // OPENROUTER.AI API FETCH INTEGRATION
     // ==========================================================================
     async fetchOpenRouterResponse(prompt, state) {
-        // 1. Try Vercel Serverless API Proxy first
-        try {
-            const serverlessResponse = await fetch("/api/copilot", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    state: state,
-                    model: this.apiConfig.model
-                })
-            });
-
-            if (serverlessResponse.ok) {
-                const data = await serverlessResponse.json();
-                const aiMessage = data.choices[0].message.content;
-                return this.parseAiResponse(aiMessage);
-            } else if (serverlessResponse.status === 404) {
-                console.log("Vercel serverless API not detected (likely running locally). Falling back to direct client-side fetch.");
-            } else {
-                const errText = await serverlessResponse.text();
-                console.warn(`Vercel serverless API returned error: ${errText}. Falling back to direct client-side fetch.`);
-            }
-        } catch (e) {
-            console.log("Vercel serverless fetch failed. Falling back to direct client-side fetch:", e);
-        }
-
-        // 2. Direct client-side fetch fallback (uses LocalStorage key)
-        if (!this.apiConfig.apiKey) {
-            throw new Error("No API Key detected. Please configure your OpenRouter API Key in the settings.");
-        }
-
         // Build rich, systemic developer instructions
         const systemPrompt = `You are the expert AI PM Copilot for DeliveryPro.AI, an enterprise Strategic PPM tool.
 Your workspace state is passed below. You must reference actual projects, OKRs, benefits, and costs in your responses.
@@ -124,30 +125,36 @@ INSTRUCTIONS:
    }
 Ensure the JSON block is enclosed within \`\`\`json ... \`\`\` tags.`;
 
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${this.apiConfig.apiKey}`,
-                "Content-Type": "application/json",
-                "X-Title": "DeliveryPro.AI"
-            },
-            body: JSON.stringify({
-                model: this.apiConfig.model,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: prompt }
-                ]
-            })
-        });
+        // 1. Try Vercel Serverless API Proxy first (always preferred - key is server-side)
+        try {
+            const serverlessResponse = await fetch("/api/copilot", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    state: state,
+                    model: this.apiConfig.model
+                })
+            });
 
-        if (!response.ok) {
-            const errBody = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errBody}`);
+            if (serverlessResponse.ok) {
+                const data = await serverlessResponse.json();
+                if (data.choices && data.choices.length > 0) {
+                    const aiMessage = data.choices[0].message.content;
+                    return this.parseAiResponse(aiMessage);
+                } else {
+                    throw new Error("OpenRouter returned empty response. Check API key and model availability.");
+                }
+            } else {
+                const errText = await serverlessResponse.text();
+                throw new Error(`Backend proxy error (HTTP ${serverlessResponse.status}): ${errText}`);
+            }
+        } catch (e) {
+            console.error("Serverless proxy call failed:", e);
+            throw e; // Let sendMessage handle the fallback
         }
-
-        const data = await response.json();
-        const aiMessage = data.choices[0].message.content;
-        return this.parseAiResponse(aiMessage);
     }
 
     parseAiResponse(aiMessage) {

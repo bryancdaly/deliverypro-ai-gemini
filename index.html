@@ -221,7 +221,8 @@
                             <button id="mode-sim-btn" class="btn active-toggle">Deterministic Simulator</button>
                             <button id="mode-live-btn" class="btn">Live OpenRouter.ai API</button>
                         </div>
-                        <p class="help-text">Simulation Mode works out-of-the-box. Live mode connects to OpenRouter.ai APIs.</p>
+                        <p class="help-text">Simulation Mode works out-of-the-box. Live mode connects to OpenRouter.ai via the server-side API key.</p>
+                    </div>
                     <div class="form-group" id="apikey-group" style="display: none !important;">
                         <input type="hidden" id="openrouter-api-key" value="">
                     </div>
@@ -232,6 +233,7 @@
                             <option value="anthropic/claude-3.5-sonnet">Anthropic: Claude 3.5 Sonnet</option>
                             <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B Instruct (Free)</option>
                         </select>
+                        <p class="help-text" style="margin-top: 4px;">Models available from the OpenRouter API key configured on the server.</p>
                     </div>
                     <div class="connection-tester">
                         <button id="test-connection-btn" class="btn btn-secondary">Test API Connection</button>

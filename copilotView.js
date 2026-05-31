@@ -40,7 +40,6 @@ class CopilotView {
     loadSettings() {
         // Hydrate settings modal from localstorage config
         const mode = aiEngine.apiConfig.mode;
-        const key = aiEngine.apiConfig.apiKey;
         const model = aiEngine.apiConfig.model;
 
         if (mode === "live") {
@@ -49,11 +48,10 @@ class CopilotView {
             this.setSimModeActive();
         }
 
-        if (this.apiKeyInput) this.apiKeyInput.value = key;
         if (this.modelSelect) this.modelSelect.value = model;
 
         // Set status dot class
-        aiEngine.updateSettings(mode, key, model);
+        aiEngine.updateSettings(mode, model);
     }
 
     async loadAvailableModels() {
@@ -185,10 +183,9 @@ class CopilotView {
         if (this.settingsSave) {
             this.settingsSave.addEventListener("click", () => {
                 const mode = this.modeLive.classList.contains("active-toggle") ? "live" : "sim";
-                const apiKey = this.apiKeyInput.value.trim();
                 const model = this.modelSelect.value;
 
-                aiEngine.updateSettings(mode, apiKey, model);
+                aiEngine.updateSettings(mode, model);
                 this.settingsModal.classList.add("hidden");
                 this.showNotification("AI Configuration saved successfully.", "success");
             });
@@ -197,67 +194,39 @@ class CopilotView {
         // Test API Connection
         if (this.testConnBtn) {
             this.testConnBtn.addEventListener("click", async () => {
-                const key = this.apiKeyInput.value.trim();
                 const model = this.modelSelect.value;
 
-                if (!key) {
-                    this.testStatus.textContent = "Testing Vercel Serverless Proxy Connection...";
-                    this.testStatus.className = "test-result";
-
-                    try {
-                        const response = await fetch("/api/copilot", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                prompt: "ping",
-                                state: store.state,
-                                model: model
-                            })
-                        });
-
-                        if (response.ok) {
-                            this.testStatus.textContent = "Serverless Proxy Connection Successful! Status: Green";
-                            this.testStatus.className = "test-result success";
-                        } else {
-                            const errData = await response.json().catch(() => ({}));
-                            const errMsg = errData.error || `HTTP ${response.status}`;
-                            throw new Error(errMsg);
-                        }
-                    } catch(e) {
-                        this.testStatus.textContent = `Serverless Proxy failed: ${e.message}`;
-                        this.testStatus.className = "test-result error";
-                    }
-                    return;
-                }
-
-                this.testStatus.textContent = "Testing direct endpoint connection...";
+                this.testStatus.textContent = "Testing Backend Proxy Connection...";
                 this.testStatus.className = "test-result";
 
                 try {
-                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    const response = await fetch("/api/copilot", {
                         method: "POST",
                         headers: {
-                            "Authorization": `Bearer ${key}`,
-                            "Content-Type": "application/json",
-                            "X-Title": "DeliveryPro.AI Connection Check"
+                            "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            model: model,
-                            messages: [{ role: "user", content: "ping" }],
-                            max_tokens: 5
+                            prompt: "Respond with only: Connection test successful.",
+                            state: store.state,
+                            model: model
                         })
                     });
 
                     if (response.ok) {
-                        this.testStatus.textContent = "Direct API Connection Successful! Status: Green";
-                        this.testStatus.className = "test-result success";
+                        const data = await response.json();
+                        if (data.choices && data.choices.length > 0) {
+                            this.testStatus.textContent = `Connection Successful! Model: ${model.split('/').pop()}`;
+                            this.testStatus.className = "test-result success";
+                        } else {
+                            throw new Error("API returned empty response");
+                        }
                     } else {
-                        throw new Error(`HTTP ${response.status}`);
+                        const errData = await response.json().catch(() => ({}));
+                        const errMsg = errData.error || `HTTP ${response.status}`;
+                        throw new Error(errMsg);
                     }
                 } catch(e) {
-                    this.testStatus.textContent = `Direct API Connection failed: ${e.message}`;
+                    this.testStatus.textContent = `Connection failed: ${e.message}`;
                     this.testStatus.className = "test-result error";
                 }
             });
