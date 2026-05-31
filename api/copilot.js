@@ -7,10 +7,10 @@ export default async function handler(req, res) {
     const { prompt, state, model } = req.body;
     
     // Retrieve environment variable
-    const apiKey = process.env.Openarouter || process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.Openrouter || process.env.OPENROUTER_API_KEY;
     
     if (!apiKey) {
-        return res.status(500).json({ error: 'OpenRouter API Key is missing on the server. Please configure the "Openarouter" environment variable in Vercel.' });
+        return res.status(500).json({ error: 'OpenRouter API Key is missing on the server. Please configure the "Openrouter" environment variable in Vercel.' });
     }
 
     // Build rich, systemic PM developer instructions

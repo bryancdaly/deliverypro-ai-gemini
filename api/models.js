@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     }
 
     // Retrieve environment variable
-    const apiKey = process.env.Openarouter || process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.Openrouter || process.env.OPENROUTER_API_KEY;
 
     try {
         const headers = {
