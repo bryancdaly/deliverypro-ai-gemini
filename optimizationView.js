@@ -52,6 +52,7 @@ class OptimizationView {
             }
         };
 
+        const level = state.scenario.activeHierarchyLevel || "enterprise";
         const currentBounds = bounds[level] || bounds.enterprise;
 
         container.innerHTML = `
@@ -105,7 +106,7 @@ class OptimizationView {
                         <h3>Active Investment Mix Scopes</h3>
                         <div class="strategy-list" style="max-height: 380px;">
                             ${state.scopes.map(scope => {
-                                if (scope.isArchived || !isScopeInHierarchy(scope.id)) return '';
+                                if (scope.isArchived || !isScopeInHierarchy(scope.id, state)) return '';
                                 const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
                                 const cost = scope.financials.capEx.plan + scope.financials.opEx.plan;
                                 return `
@@ -205,7 +206,7 @@ class OptimizationView {
         // Plot dots for each scope project
         state.scopes.forEach(scope => {
             if (scope.isArchived) return;
-            if (!scopeInHierarchy(scope.id)) return;
+            if (!isScopeInHierarchy(scope.id, state)) return;
             const isIncluded = state.scenario.includedProjectIds.includes(scope.id);
             const x = getX(scope.executionRisk);
             const y = getY(scope.expectedValue);
@@ -304,7 +305,7 @@ class OptimizationView {
                     const fteLimit = state.scenario.fteCap;
 
                     // Simulated Knapsack Solver maximizing Expected Strategic Value under cost & FTE constraints
-                    let availableScopes = [...state.scopes].filter(s => !s.isArchived && s.status !== "Proposed" && scopeInHierarchy(s.id));
+                    let availableScopes = [...state.scopes].filter(s => !s.isArchived && s.status !== "Proposed" && isScopeInHierarchy(s.id, state));
                     
                     // Sort by expected value efficiency (expectedValue / CapEx Cost)
                     availableScopes.sort((a,b) => {
