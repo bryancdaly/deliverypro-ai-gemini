@@ -31,8 +31,9 @@ export async function GET(_req, { params }) {
     }
 
     try {
-        const body = await readFile(filePath);
-        const contentType = CONTENT_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+        const resolvedPath = await resolveLegacyFile(filePath);
+        const body = await readFile(resolvedPath);
+        const contentType = CONTENT_TYPES[path.extname(resolvedPath).toLowerCase()] || "application/octet-stream";
         return new Response(body, {
             headers: {
                 "Content-Type": contentType,
@@ -42,4 +43,17 @@ export async function GET(_req, { params }) {
     } catch {
         return Response.json({ error: "Not found" }, { status: 404 });
     }
+}
+
+async function resolveLegacyFile(filePath) {
+    try {
+        await readFile(filePath);
+        return filePath;
+    } catch (error) {
+        if (error?.code !== "ENOENT" || path.extname(filePath)) throw error;
+    }
+
+    const htmlPath = `${filePath}.html`;
+    await readFile(htmlPath);
+    return htmlPath;
 }
