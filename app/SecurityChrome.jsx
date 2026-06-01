@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 import { getEffectiveAccess } from "@/lib/authz";
 import { hasClerkConfig } from "@/lib/runtime";
 
@@ -7,7 +8,9 @@ export const dynamic = "force-dynamic";
 
 export default async function SecurityChrome({ children }) {
     const access = await getEffectiveAccess();
-    const roleSummary = access.error ? "Unknown" : access.roles.map((role) => role.name).join(", ");
+    if (access.error) redirect("/sign-in");
+
+    const roleSummary = access.roles.map((role) => role.name).join(", ");
 
     return (
         <div className="security-shell">
@@ -25,7 +28,7 @@ export default async function SecurityChrome({ children }) {
                     <Link className="security-link" href="/admin/audit">Audit</Link>
                 </nav>
                 <div className="security-actions">
-                    <span className="security-badge">{access.error ? "No session" : access.source}</span>
+                    <span className="security-badge">{access.source}</span>
                     {hasClerkConfig()
                         ? <UserButton afterSignOutUrl="/sign-in" />
                         : <span className="security-badge">Local admin</span>}
