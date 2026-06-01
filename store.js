@@ -311,7 +311,76 @@ class DeliveryProStore {
             auditLog: [],
 
             // RAID + Change Request Logs (keyed by scopeId)
-            raidLogs: {}
+            raidLogs: {
+                "scope-route-optimization": {
+                    risks: [
+                        { id: "r-ro-1", title: "ERP Vendor API Delivery Delay", description: "External ERP vendor may not meet promised API delivery milestone, blocking core routing integrations.", category: "Technical", probability: "High", impact: "High", owner: "Bryan Lee", status: "Open", reviewDate: "2024-07-15", isArchived: false },
+                        { id: "r-ro-2", title: "ML Model Accuracy Below Target Threshold", description: "Routing algorithm may fail to achieve the 20% efficiency gain required to realise transport emission benefits.", category: "Technical", probability: "Medium", impact: "High", owner: "Bryan Lee", status: "Mitigating", reviewDate: "2024-08-01", isArchived: false },
+                        { id: "r-ro-3", title: "Driver Adoption Resistance", description: "Field drivers may reject the new routing UI, reducing uptake and negating efficiency gains.", category: "Operational", probability: "Medium", impact: "Medium", owner: "Sarah Connor", status: "Open", reviewDate: "2024-09-01", isArchived: false }
+                    ],
+                    issues: [
+                        { id: "i-ro-1", title: "ERP Sandbox Environment Unstable", description: "Dev sandbox repeatedly times out, causing delays to API integration work and blocking sprint delivery.", category: "Technical", priority: "High", owner: "Bryan Lee", status: "In Progress", dateRaised: "2024-03-20", dateResolved: "", isArchived: false },
+                        { id: "i-ro-2", title: "Missing Data Mapping Documentation", description: "Vendor has not provided field mapping specification for legacy shipment records. Integration cannot proceed.", category: "Technical", priority: "Medium", owner: "Sarah Connor", status: "Open", dateRaised: "2024-04-05", dateResolved: "", isArchived: false }
+                    ],
+                    assumptions: [
+                        { id: "a-ro-1", title: "ERP API Available by End of Q2 2024", description: "Core assumption that the ERP vendor delivers authenticated API access by 30 June 2024 as contractually agreed.", category: "Business", impactIfWrong: "High", owner: "Sarah Connor", status: "Active", dateLogged: "2024-02-01", reviewDate: "2024-06-30", isArchived: false },
+                        { id: "a-ro-2", title: "Driver Devices Meet Minimum OS Requirements", description: "Field driver mobile devices support iOS 16+ or Android 12+ required for the routing app.", category: "Technical", impactIfWrong: "Medium", owner: "Bryan Lee", status: "Validated", dateLogged: "2024-02-15", reviewDate: "2024-05-01", isArchived: false }
+                    ],
+                    decisions: [
+                        { id: "d-ro-1", title: "Use REST API Over GraphQL for ERP Integration", description: "Selected REST due to vendor's limited GraphQL support. Reduces vendor negotiation risk at the cost of some flexibility.", category: "Technical", decisionMaker: "Bryan Lee", impact: "Medium", status: "Approved", dateRaised: "2024-02-10", dateDecided: "2024-02-20", isArchived: false },
+                        { id: "d-ro-2", title: "Phased Regional Rollout — 3 Regions First", description: "Roll out to Auckland, Wellington, and Christchurch before national expansion to control go-live risk.", category: "Operational", decisionMaker: "Sarah Connor", impact: "High", status: "Approved", dateRaised: "2024-05-01", dateDecided: "2024-05-15", isArchived: false }
+                    ],
+                    changes: [
+                        { id: "cr-ro-1", title: "Extend Routing Scope to Include Interisland Ferry Routes", description: "Operations team requests ferry route optimisation be included in scope to cover Pacific interisland freight.", changeType: "Scope", priority: "Medium", requestedBy: "Marcus Aurelius", scheduleDelta: 30, costDelta: 45000, status: "Under Review", dateSubmitted: "2024-06-15", isArchived: false },
+                        { id: "cr-ro-2", title: "Accelerate UAT Phase by Two Weeks", description: "Board directive to bring forward go-live date. UAT compressed; additional testers required to maintain coverage.", changeType: "Schedule", priority: "High", requestedBy: "Marcus Aurelius", scheduleDelta: -14, costDelta: 25000, status: "Approved", dateSubmitted: "2024-07-20", isArchived: false }
+                    ]
+                },
+                "scope-transport-fleet": {
+                    risks: [
+                        { id: "r-tf-1", title: "Supplier Manufacturing Backlog — Extended Lead Times", description: "Primary hybrid truck supplier has flagged an 8–12 week manufacturing backlog, threatening batch 2 delivery.", category: "External", probability: "High", impact: "High", owner: "Sarah Connor", status: "Open", reviewDate: "2024-08-30", isArchived: false },
+                        { id: "r-tf-2", title: "Grid Capacity Insufficient for Charging Infrastructure", description: "Port Authority may refuse the 3-phase electrical upgrade application, preventing charging dock commissioning.", category: "Operational", probability: "Medium", impact: "High", owner: "John Doe", status: "Mitigating", reviewDate: "2024-09-15", isArchived: false },
+                        { id: "r-tf-3", title: "Commercial EV Insurance Premium Escalation", description: "Insurer has indicated a potential 35% premium increase for commercial EV fleet renewal, impacting OpEx forecasts.", category: "Financial", probability: "Low", impact: "Medium", owner: "Marcus Aurelius", status: "Accepted", reviewDate: "2024-12-01", isArchived: false }
+                    ],
+                    issues: [
+                        { id: "i-tf-1", title: "Batch 1 Delivery Short — One Vehicle Has Manufacturing Defect", description: "Supplier delivered 4 of 5 vehicles; fifth unit has a cab structural defect and has been recalled for rework.", category: "Operational", priority: "High", owner: "Sarah Connor", status: "In Progress", dateRaised: "2024-04-28", dateResolved: "", isArchived: false },
+                        { id: "i-tf-2", title: "Charging Dock Building Permit Six Weeks Overdue", description: "Council building permit for charging dock installation is stalled. Contractor cannot commence electrical work.", category: "Operational", priority: "Critical", owner: "John Doe", status: "Open", dateRaised: "2024-05-10", dateResolved: "", isArchived: false }
+                    ],
+                    assumptions: [
+                        { id: "a-tf-1", title: "NZ EV Charging Connector Standard Remains Stable", description: "Project assumes no regulatory change to the NZ Type 2 / CCS2 charging connector standard during the project lifecycle.", category: "Regulatory", impactIfWrong: "High", owner: "Sarah Connor", status: "Active", dateLogged: "2024-01-20", reviewDate: "2024-12-01", isArchived: false },
+                        { id: "a-tf-2", title: "Warehouse Electrical Grid Supports 3-Phase Charging Load", description: "Assumes existing warehouse wiring and switchboards can handle the additional load from 8 simultaneous charging docks.", category: "Technical", impactIfWrong: "High", owner: "John Doe", status: "Invalid", dateLogged: "2024-03-01", reviewDate: "2024-06-01", isArchived: false }
+                    ],
+                    decisions: [
+                        { id: "d-tf-1", title: "Single-Supplier Procurement for Volume Discount", description: "Opted for a single supplier over split tender to secure a 12% volume discount. Concentrates supplier risk.", category: "Commercial", decisionMaker: "Marcus Aurelius", impact: "High", status: "Approved", dateRaised: "2024-01-10", dateDecided: "2024-01-22", isArchived: false },
+                        { id: "d-tf-2", title: "Install 8 Charging Docks Instead of 5", description: "Increased dock count to future-proof for fleet expansion beyond this project's 10 vehicles.", category: "Technical", decisionMaker: "John Doe", impact: "Medium", status: "Approved", dateRaised: "2024-04-01", dateDecided: "2024-04-14", isArchived: false }
+                    ],
+                    changes: [
+                        { id: "cr-tf-1", title: "Add 2 Refrigerated Hybrid Units to Procurement", description: "Cold-chain logistics team has requested refrigerated variants be included to support perishable goods transport.", changeType: "Scope", priority: "High", requestedBy: "Sarah Connor", scheduleDelta: 60, costDelta: 185000, status: "Under Review", dateSubmitted: "2024-05-01", isArchived: false },
+                        { id: "cr-tf-2", title: "Defer Second Batch Procurement by One Quarter", description: "Q3 CapEx ceiling reached. Board has directed second batch purchase be pushed to Q1 2025 to manage cash flow.", changeType: "Schedule", priority: "Medium", requestedBy: "Marcus Aurelius", scheduleDelta: 90, costDelta: 0, status: "Approved", dateSubmitted: "2024-07-15", isArchived: false }
+                    ]
+                },
+                "scope-safety-module": {
+                    risks: [
+                        { id: "r-sm-1", title: "WorkSafe NZ Regulation Change Mid-Build", description: "NZ WorkSafe may update compliance standards during the build phase, requiring redesign of automated checklist workflows.", category: "External", probability: "Medium", impact: "High", owner: "John Doe", status: "Open", reviewDate: "2024-09-30", isArchived: false },
+                        { id: "r-sm-2", title: "Single-Source Smart Gate Hardware Vendor Risk", description: "Sole-source lock hardware supplier showing signs of financial distress. Replacement sourcing would add 10+ weeks.", category: "External", probability: "Low", impact: "High", owner: "John Doe", status: "Mitigating", reviewDate: "2024-10-15", isArchived: false }
+                    ],
+                    issues: [
+                        { id: "i-sm-1", title: "Checklist Workflows Rejected by External Safety Auditors", description: "External audit flagged 3 workflow steps as non-compliant with the current H&S Act. Rework required before certification.", category: "Technical", priority: "Critical", owner: "John Doe", status: "Open", dateRaised: "2024-08-12", dateResolved: "", isArchived: false },
+                        { id: "i-sm-2", title: "Smart Gate Firmware Incompatible with Warehouse SCADA", description: "Vendor firmware v2.1 does not integrate with the existing SCADA system. Vendor is working on a patch; ETA unknown.", category: "Technical", priority: "High", owner: "John Doe", status: "Open", dateRaised: "2024-09-01", dateResolved: "", isArchived: false }
+                    ],
+                    assumptions: [
+                        { id: "a-sm-1", title: "Staff Complete E-Learning Modules Within 4 Weeks of Go-Live", description: "Safety automation effectiveness depends on all warehouse staff completing mandatory digital safety training within 4 weeks.", category: "Resource", impactIfWrong: "High", owner: "John Doe", status: "Active", dateLogged: "2024-07-05", reviewDate: "2024-11-30", isArchived: false },
+                        { id: "a-sm-2", title: "WorkSafe Certification Obtainable Within Project Timeline", description: "Assumes no backlog in WorkSafe NZ certification queue and certification can be granted by December 2024.", category: "Regulatory", impactIfWrong: "High", owner: "John Doe", status: "Active", dateLogged: "2024-07-10", reviewDate: "2024-10-01", isArchived: false }
+                    ],
+                    decisions: [
+                        { id: "d-sm-1", title: "Fully Digital Compliance Checklists — No Paper Hybrid", description: "Rejected hybrid paper/digital approach in favour of fully automated digital checklists to ensure audit trail integrity.", category: "Technical", decisionMaker: "John Doe", impact: "High", status: "Approved", dateRaised: "2024-07-01", dateDecided: "2024-07-15", isArchived: false },
+                        { id: "d-sm-2", title: "Pilot in Auckland Hub Before National Rollout", description: "Deploy and certify in the Auckland warehouse first; only proceed nationally after a 4-week clean pilot period.", category: "Operational", decisionMaker: "Sarah Connor", impact: "Medium", status: "Approved", dateRaised: "2024-08-01", dateDecided: "2024-08-20", isArchived: false }
+                    ],
+                    changes: [
+                        { id: "cr-sm-1", title: "Extend Smart Gate Coverage to All Dispatch Bays", description: "Operations requests smart gate locks be extended from receiving docks to all 6 dispatch exit bays for full site coverage.", changeType: "Scope", priority: "Medium", requestedBy: "John Doe", scheduleDelta: 21, costDelta: 18000, status: "Submitted", dateSubmitted: "2024-09-05", isArchived: false },
+                        { id: "cr-sm-2", title: "Reduce Compliance Check Frequency from Daily to Weekly", description: "Operations manager requests daily automated checks be reduced to weekly to reduce production line interruptions.", changeType: "Scope", priority: "Low", requestedBy: "Marcus Aurelius", scheduleDelta: 0, costDelta: -5000, status: "Rejected", dateSubmitted: "2024-09-15", isArchived: false }
+                    ]
+                }
+            }
         };
 
         // Load persisted state from LocalStorage if available
@@ -365,6 +434,10 @@ class DeliveryProStore {
                             if (!Array.isArray(t.dependencies)) t.dependencies = [];
                             if (t.parentTaskId === undefined) t.parentTaskId = null;
                         });
+                    }
+                    // Backfill RAID seed data for the 3 core scopes if raidLogs is empty
+                    if (!parsed.raidLogs || Object.keys(parsed.raidLogs).length === 0) {
+                        parsed.raidLogs = this.state.raidLogs;
                     }
                     this.state = parsed;
                 } else {
