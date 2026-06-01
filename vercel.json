@@ -1,4 +1,5 @@
 {
+  "framework": "nextjs",
   "version": 2,
   "cleanUrls": true
 }
