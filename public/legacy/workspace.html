@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeliveryPro.AI – Premium AI-First Strategy & Portfolio Management</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Material Symbols Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="index.css?v=1.0.4">
+</head>
+<body class="deliverypro-theme">
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar">
+            <div class="sidebar-brand">
+                <span class="material-symbols-outlined brand-icon">insights</span>
+                <div class="brand-text">
+                    <h1>DeliveryPro<span>.AI</span></h1>
+                    <small>Strategic Portfolio Suite</small>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#strategy" class="nav-item active" data-view="strategy">
+                    <span class="material-symbols-outlined">explore</span>
+                    <span>Strategy Board</span>
+                </a>
+                <a href="#intake" class="nav-item" data-view="intake">
+                    <span class="material-symbols-outlined">move_to_inbox</span>
+                    <span>Intake Funnel</span>
+                </a>
+                <a href="#optimizer" class="nav-item" data-view="optimizer">
+                    <span class="material-symbols-outlined">query_stats</span>
+                    <span>Portfolio Optimizer</span>
+                </a>
+                <a href="#finance" class="nav-item" data-view="finance">
+                    <span class="material-symbols-outlined">payments</span>
+                    <span>Financial Board</span>
+                </a>
+                <a href="#kanban" class="nav-item" data-view="kanban">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Kanban Board</span>
+                </a>
+                <a href="#schedule" class="nav-item" data-view="schedule">
+                    <span class="material-symbols-outlined">event_note</span>
+                    <span>WBS Schedule</span>
+                </a>
+                <a href="#gantt" class="nav-item" data-view="gantt">
+                    <span class="material-symbols-outlined">date_range</span>
+                    <span>AI Gantt Chart</span>
+                </a>
+                <a href="#resources" class="nav-item" data-view="resources">
+                    <span class="material-symbols-outlined">groups</span>
+                    <span>Resource Allocator</span>
+                </a>
+                <a href="#synthesizer" class="nav-item" data-view="synthesizer">
+                    <span class="material-symbols-outlined">analytics</span>
+                    <span>Executive Synthesizer</span>
+                </a>
+                <a href="#audit" class="nav-item" data-view="audit">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Audit Log</span>
+                </a>
+                <a href="#raid" class="nav-item" data-view="raid">
+                    <span class="material-symbols-outlined">shield_with_heart</span>
+                    <span>RAID &amp; Change Log</span>
+                </a>
+            </nav>
+
+            <!-- Portfolio Pulse Activity Feed -->
+            <div id="pulse-panel">
+                <div class="pulse-header">
+                    <h3>Pulse</h3>
+                    <span class="pulse-indicator"></span>
+                </div>
+                <div id="pulse-stream" class="pulse-stream">
+                    <!-- Events injected dynamically by store -->
+                </div>
+            </div>
+
+            <!-- Quick aggregate stats -->
+            <div class="sidebar-footer">
+                <div class="footer-stats">
+                    <div class="f-stat">
+                        <span class="stat-lbl">Projects</span>
+                        <span class="stat-val" id="sb-stat-projects">0</span>
+                    </div>
+                    <div class="f-stat">
+                        <span class="stat-lbl">Realization</span>
+                        <span class="stat-val" id="sb-stat-value">0%</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Area -->
+        <main id="workspace">
+            <header id="top-bar">
+                <div class="view-title-container">
+                    <h2 id="current-view-title">Strategy Board</h2>
+                    <p id="current-view-desc">Top-down strategic cascading alignment and line-of-sight tracking</p>
+                </div>
+                <div class="top-bar-actions">
+                    <!-- Hierarchy Level Selector -->
+                    <div id="hierarchy-selector-container" class="dropdown-container">
+                        <div id="active-hierarchy-badge" class="hierarchy-badge">
+                            <span class="material-symbols-outlined" id="active-hierarchy-icon">business</span>
+                            <div class="hierarchy-info">
+                                <span class="hierarchy-lbl">Hierarchy Level</span>
+                                <span id="active-node-name">Enterprise (Global Corp)</span>
+                            </div>
+                            <span class="material-symbols-outlined dropdown-arrow">arrow_drop_down</span>
+                        </div>
+                        <div id="hierarchy-dropdown" class="dropdown-menu">
+                            <div class="dropdown-item active-item" data-level="enterprise">
+                                <span class="material-symbols-outlined">business</span>
+                                <div class="item-text">
+                                    <h4>Enterprise</h4>
+                                    <small>Global Corp – all portfolios</small>
+                                </div>
+                            </div>
+                            <div class="dropdown-item" data-level="portfolio">
+                                <span class="material-symbols-outlined">donut_large</span>
+                                <div class="item-text">
+                                    <h4>Portfolio</h4>
+                                    <small>Sustainable Agriculture</small>
+                                </div>
+                            </div>
+                            <div class="dropdown-section-label">
+                                <span class="material-symbols-outlined">account_tree</span>
+                                Program
+                            </div>
+                            <div id="program-dynamic-items"></div>
+                            <div class="dropdown-section-label">
+                                <span class="material-symbols-outlined">article</span>
+                                Project
+                            </div>
+                            <div id="project-dynamic-items"></div>
+                        </div>
+                    </div>
+
+                    <!-- Copilot Toggle -->
+                    <button id="copilot-toggle" class="btn btn-copilot">
+                        <span class="material-symbols-outlined">smart_toy</span>
+                        <span>AI Copilot</span>
+                        <span id="copilot-pulse-dot" class="status-dot active-sim"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Workspace Body -->
+            <div id="view-content" class="fade-in">
+                <!-- Views are dynamically rendered here -->
+            </div>
+        </main>
+
+        <!-- Persistent AI Copilot Drawer (Collapsible) -->
+        <aside id="copilot-drawer" class="collapsed">
+            <div class="copilot-header">
+                <div class="copilot-title">
+                    <span class="material-symbols-outlined robot-icon">smart_toy</span>
+                    <div>
+                        <h3>AI Copilot</h3>
+                        <small id="connection-status">Deterministic Simulation Mode</small>
+                    </div>
+                </div>
+                <div class="copilot-actions">
+                    <button id="copilot-settings-btn" class="icon-btn" title="AI OpenRouter Settings">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                    <button id="copilot-close" class="icon-btn" title="Close Drawer">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Chat history pane -->
+            <div id="copilot-chat-body" class="chat-body">
+                <div class="message system-msg">
+                    <span class="material-symbols-outlined">info</span>
+                    <p>I am your DeliveryPro AI PM Assistant. I can analyze strategic alignment, propose new project scopes, optimize resource workloads, and detail financial risk profiles. Type a command or ask a question!</p>
+                </div>
+                <!-- Dynamic chats and proposals injected here -->
+            </div>
+
+            <!-- Suggested chips -->
+            <div class="chat-chips-container">
+                <div class="chips-scroller">
+                    <button class="chip" data-prompt="What disbenefits are we risking?">What disbenefits?</button>
+                    <button class="chip" data-prompt="Show OKR alignment for Logistics Benefit">Logistics OKR Alignment</button>
+                    <button class="chip" data-prompt="Optimize portfolio budget sandbox">Optimize Budget Mix</button>
+                    <button class="chip" data-prompt="Synthesize executive value report">Generate Exec Report</button>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div class="copilot-footer">
+                <div class="input-row">
+                    <textarea id="copilot-input" placeholder="Ask Copilot or issue directives..." rows="1"></textarea>
+                    <button id="copilot-send" class="icon-btn send-btn" title="Send message">
+                        <span class="material-symbols-outlined">send</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- OpenRouter Settings Modal Dialog -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>OpenRouter.ai LLM Settings</h2>
+                    <button id="settings-close" class="icon-btn">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>AI Operational Mode</label>
+                        <div class="toggle-buttons">
+                            <button id="mode-sim-btn" class="btn active-toggle">Deterministic Simulator</button>
+                            <button id="mode-live-btn" class="btn">Live OpenRouter.ai API</button>
+                        </div>
+                        <p class="help-text">Simulation Mode works out-of-the-box. Live mode connects to OpenRouter.ai via the server-side API key.</p>
+                    </div>
+                    <div class="form-group" id="apikey-group" style="display: none !important;">
+                        <input type="hidden" id="openrouter-api-key" value="">
+                    </div>
+                    <div class="form-group" id="model-group">
+                        <label for="openrouter-model">Preferred LLM Model</label>
+                        <select id="openrouter-model">
+                            <option value="google/gemini-2.5-pro">Google: Gemini 2.5 Pro</option>
+                            <option value="anthropic/claude-3.5-sonnet">Anthropic: Claude 3.5 Sonnet</option>
+                            <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B Instruct (Free)</option>
+                        </select>
+                        <p class="help-text" style="margin-top: 4px;">Models available from the OpenRouter API key configured on the server.</p>
+                    </div>
+                    <div class="connection-tester">
+                        <button id="test-connection-btn" class="btn btn-secondary">Test API Connection</button>
+                        <span id="test-status" class="test-result"></span>
+                    </div>
+                    <div class="form-group" style="margin-top: 24px; border-top: 1px solid var(--glass-border); padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+                        <label style="text-align: left;">Portfolio Sandbox Data</label>
+                        <button id="reset-portfolio-btn" class="btn btn-secondary" style="width: 100%; border-color: rgba(231, 76, 60, 0.5); color: var(--color-danger); display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(231, 76, 60, 0.04); padding: 8px;">
+                            <span class="material-symbols-outlined" style="font-size:16px;">delete_forever</span>
+                            Reset Portfolio to Demo Defaults
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="settings-save" class="btn btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toasts Container -->
+        <div id="toast-container"></div>
+
+        <!-- Interactive Strategic Contribution Inspector Modal -->
+        <div id="contribution-modal" class="modal-overlay hidden">
+            <div class="modal-card" style="width: 580px; max-width: 95vw;">
+                <div class="modal-header">
+                    <h2 id="contrib-modal-title">Strategic Contribution Inspector</h2>
+                    <button id="contrib-modal-close" class="icon-btn" title="Close Modal">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="contrib-modal-body" style="gap: 16px; padding: 24px;">
+                    <!-- Injected dynamically by strategyView.js -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Markdown parser for AI chat responses -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@13/marked.min.js"></script>
+
+    <!-- Application Code Modules -->
+    <script type="module" src="store.js"></script>
+    <script type="module" src="aiEngine.js"></script>
+    <script type="module" src="strategyView.js"></script>
+    <script type="module" src="intakeView.js"></script>
+    <script type="module" src="optimizationView.js"></script>
+    <script type="module" src="financeView.js"></script>
+    <script type="module" src="kanbanView.js"></script>
+    <script type="module" src="scheduleView.js"></script>
+    <script type="module" src="ganttView.js"></script>
+    <script type="module" src="resourceView.js"></script>
+    <script type="module" src="copilotView.js"></script>
+    <script type="module" src="auditView.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
