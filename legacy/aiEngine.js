@@ -115,11 +115,12 @@ INSTRUCTIONS:
      "proposal": {
        "actionLabel": "Human-readable label of the action",
        "diffs": ["Add task X", "Change status of Y", "Include Project Z in mix"],
-       "actionType": "create_project" | "balance_resources" | "update_task",
+       "actionType": "create_project" | "balance_resources" | "update_task" | "update_tasks",
        "payload": {
          // relative payload details like:
          // For create_project: { "name": "...", "description": "...", "methodology": "...", "capEx": 150000, "opEx": 25000, "alignedBenefitId": "...", "fte": 3 }
          // For update_task: { "taskId": "...", "status": "..." }
+         // For update_tasks: { "updates": [{ "taskId": "...", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD" }] }
        }
      }
    }

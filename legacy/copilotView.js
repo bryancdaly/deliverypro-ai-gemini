@@ -281,9 +281,10 @@ class CopilotView {
             // 4. Render AI Message response bubble
             this.appendMessage(response.text, "ai");
 
-            // 5. Render Actionable Proposal Card if returned
-            if (response.proposal) {
-                this.appendProposalCard(response.proposal);
+            // 5. Render Actionable Proposal Card if returned, or synthesize one for known edit requests.
+            const proposal = response.proposal || this.createFallbackProposal(text);
+            if (proposal) {
+                this.appendProposalCard(proposal);
             }
         } catch(e) {
             this.removeShimmerBubble(shimmerId);
@@ -291,6 +292,66 @@ class CopilotView {
         }
 
         this.scrollChatToBottom();
+    }
+
+    createFallbackProposal(prompt) {
+        const p = prompt.toLowerCase();
+        const asksForTaskDates = (
+            (p.includes("date") || p.includes("timeline") || p.includes("schedule")) &&
+            (p.includes("task") || p.includes("tasks")) &&
+            (p.includes("add") || p.includes("set") || p.includes("update") || p.includes("finish"))
+        );
+
+        if (!asksForTaskDates) return null;
+
+        const candidateTasks = store.state.tasks.filter(task =>
+            !task.isArchived &&
+            ["todo", "in_progress"].includes(task.status)
+        );
+
+        if (!candidateTasks.length) return null;
+
+        const updates = this.buildNextMonthTaskDateUpdates(candidateTasks);
+        if (!updates.length) return null;
+
+        return {
+            actionLabel: `Set start and finish dates for ${updates.length} active tasks`,
+            actionType: "update_tasks",
+            diffs: updates.map(update =>
+                `Set "${update.title}" from ${update.previousStartDate || "no start"}-${update.previousEndDate || "no finish"} to ${update.startDate}-${update.endDate}`
+            ),
+            payload: { updates }
+        };
+    }
+
+    buildNextMonthTaskDateUpdates(tasks) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const startOfNextWeek = new Date(today);
+        const daysUntilMonday = (8 - startOfNextWeek.getDay()) % 7 || 7;
+        startOfNextWeek.setDate(startOfNextWeek.getDate() + daysUntilMonday);
+
+        return tasks.map((task, index) => {
+            const start = new Date(startOfNextWeek);
+            start.setDate(start.getDate() + (index * 3));
+
+            const end = new Date(start);
+            end.setDate(end.getDate() + (task.isMilestone ? 0 : 4));
+
+            return {
+                taskId: task.id,
+                title: task.title,
+                previousStartDate: task.startDate || "",
+                previousEndDate: task.endDate || "",
+                startDate: this.formatDate(start),
+                endDate: this.formatDate(end)
+            };
+        });
+    }
+
+    formatDate(date) {
+        return date.toISOString().slice(0, 10);
     }
 
     appendMessage(htmlText, type) {
@@ -329,23 +390,39 @@ class CopilotView {
         const card = document.createElement("div");
         card.className = "proposal-card";
         
-        let diffsHtml = proposal.diffs.map(d => {
+        const diffs = Array.isArray(proposal.diffs) ? proposal.diffs : [];
+        let diffsHtml = diffs.map(d => {
             const isAdd = d.startsWith("[NEW]") || d.startsWith("Include");
             const isDel = d.startsWith("[DELETE]") || d.startsWith("Exclude") || d.startsWith("Adjust");
             return `<div class="proposal-diff-item ${isAdd ? 'add' : (isDel ? 'del' : '')}">${escapeHtml(d)}</div>`;
         }).join('');
+
+        if (proposal.actionType === "update_tasks") {
+            const updates = proposal.payload?.updates || [];
+            diffsHtml = updates.map(update => `
+                <div class="proposal-task-update">
+                    <div class="proposal-task-title">${escapeHtml(update.title || update.taskId)}</div>
+                    <div class="proposal-date-row">
+                        <span>${escapeHtml(update.previousStartDate || "No start")} - ${escapeHtml(update.previousEndDate || "No finish")}</span>
+                        <span class="material-symbols-outlined">arrow_forward</span>
+                        <strong>${escapeHtml(update.startDate)} - ${escapeHtml(update.endDate)}</strong>
+                    </div>
+                </div>
+            `).join('');
+        }
 
         card.innerHTML = `
             <h4>
                 <span class="material-symbols-outlined" style="font-size:16px;">verified_user</span>
                 AI Execution Change Proposal
             </h4>
-            <div style="display:flex; flex-direction:column; gap:4px;">
+            <p class="proposal-summary">${escapeHtml(proposal.actionLabel || "Review proposed changes before applying.")}</p>
+            <div class="proposal-diff-list">
                 ${diffsHtml}
             </div>
             <div class="proposal-actions">
-                <button class="btn btn-secondary reject-proposal-btn">Discard Proposal</button>
-                <button class="btn btn-primary approve-proposal-btn">Approve & Execute</button>
+                <button class="btn btn-secondary reject-proposal-btn">Discard</button>
+                <button class="btn btn-primary approve-proposal-btn">Approve</button>
             </div>
         `;
 
@@ -411,6 +488,25 @@ class CopilotView {
                             state.scenario.budgetCap = payload.budgetCap;
                             state.scenario.fteCap = payload.fteCap;
                             state.scenario.includedProjectIds = payload.includedProjectIds;
+                        }
+
+                        else if (proposal.actionType === "update_task") {
+                            const task = state.tasks.find(t => t.id === payload.taskId);
+                            if (task) {
+                                if (payload.status) task.status = payload.status;
+                                if (payload.startDate) task.startDate = payload.startDate;
+                                if (payload.endDate) task.endDate = payload.endDate;
+                            }
+                        }
+
+                        else if (proposal.actionType === "update_tasks") {
+                            (payload.updates || []).forEach(update => {
+                                const task = state.tasks.find(t => t.id === update.taskId);
+                                if (!task) return;
+                                if (update.status) task.status = update.status;
+                                if (update.startDate) task.startDate = update.startDate;
+                                if (update.endDate) task.endDate = update.endDate;
+                            });
                         }
                     }
                 );
