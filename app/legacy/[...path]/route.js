@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { requireUser } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,9 +17,6 @@ const CONTENT_TYPES = {
 };
 
 export async function GET(_req, { params }) {
-    const required = await requireUser();
-    if (required.error) return required.error;
-
     const { path: requestedPath = [] } = await params;
     const relativePath = requestedPath.join("/");
     const legacyRoot = path.join(process.cwd(), "legacy");
