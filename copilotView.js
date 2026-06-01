@@ -310,12 +310,16 @@ class CopilotView {
     appendShimmerBubble() {
         const shimmerId = "shimmer-" + Date.now();
         const bubble = document.createElement("div");
-        bubble.className = "message ai-msg ai-shimmer";
+        bubble.className = "message ai-msg";
         bubble.id = shimmerId;
-        bubble.style.height = "52px";
-        bubble.style.width = "180px";
-        bubble.style.borderRadius = "16px 16px 16px 2px";
-        
+        bubble.innerHTML = `
+            <div class="ai-thinking-bubble">
+                <div class="thinking-dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <span class="thinking-label">AI is thinking...</span>
+            </div>
+        `;
         this.chatBody.appendChild(bubble);
         return shimmerId;
     }
