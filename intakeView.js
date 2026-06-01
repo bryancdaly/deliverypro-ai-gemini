@@ -131,6 +131,10 @@ class IntakeView {
                             <h4>Scoring & Vetting</h4>
                             <div class="sandbox-cards-container" id="col-vetting"></div>
                         </div>
+                        <div class="sandbox-column" data-status="Rejected" style="opacity:0.65;">
+                            <h4 style="color:var(--color-warning);">Rejected</h4>
+                            <div class="sandbox-cards-container" id="col-rejected"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -214,38 +218,43 @@ class IntakeView {
         const cols = {
             Draft: document.getElementById("col-draft"),
             "Under Review": document.getElementById("col-review"),
-            Vetting: document.getElementById("col-vetting")
+            Vetting: document.getElementById("col-vetting"),
+            Rejected: document.getElementById("col-rejected")
         };
 
         Object.values(cols).forEach(el => { if (el) el.innerHTML = ""; });
 
         requests.forEach(req => {
-            if (req.status === "Rejected") return;
             const container = cols[req.status];
-            if (container) {
-                const capEx = req.capEx || req.cost || 0;
-                const opEx = req.opEx || 0;
-                const dateRange = (req.startDate && req.endDate)
-                    ? `${req.startDate} → ${req.endDate}`
-                    : (req.effort ? `${req.effort}m duration` : "No dates set");
+            if (!container) return;
 
-                const card = document.createElement("div");
-                card.className = "sandbox-card";
-                card.dataset.id = req.id;
-                card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                        <h5 style="margin:0; font-size:13px;">${req.title}</h5>
-                        <span class="score-badge" style="white-space:nowrap;">WSJF: ${Number(req.WSJF).toFixed(1)}</span>
-                    </div>
-                    <p style="font-size:11px; color: var(--color-text-muted); margin: 6px 0;">${req.description.substring(0, 90)}${req.description.length > 90 ? '…' : ''}</p>
-                    <div class="sandbox-card-footer" style="font-size:11px;">
-                        <span>NZ$${(capEx + opEx).toLocaleString()}</span>
-                        <span style="color: var(--color-text-muted);">${dateRange}</span>
-                    </div>
-                `;
-                container.appendChild(card);
-            }
+            const capEx = req.capEx || req.cost || 0;
+            const opEx = req.opEx || 0;
+            const dateRange = (req.startDate && req.endDate)
+                ? `${req.startDate} → ${req.endDate}`
+                : (req.effort ? `${req.effort}m duration` : "No dates set");
+            const isRejected = req.status === "Rejected";
+
+            const card = document.createElement("div");
+            card.className = "sandbox-card";
+            card.dataset.id = req.id;
+            card.draggable = !isRejected; // rejected cards are not draggable
+            if (isRejected) card.style.opacity = "0.6";
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <h5 style="margin:0; font-size:13px;">${req.title}</h5>
+                    <span class="score-badge" style="white-space:nowrap;">WSJF: ${Number(req.WSJF).toFixed(1)}</span>
+                </div>
+                <p style="font-size:11px; color: var(--color-text-muted); margin: 6px 0;">${req.description.substring(0, 90)}${req.description.length > 90 ? '…' : ''}</p>
+                <div class="sandbox-card-footer" style="font-size:11px;">
+                    <span>NZ$${(capEx + opEx).toLocaleString()}</span>
+                    <span style="color: var(--color-text-muted);">${dateRange}</span>
+                </div>
+            `;
+            container.appendChild(card);
         });
+
+        this._bindDragAndDrop();
     }
 
     _openVettingModal(reqId) {
@@ -317,7 +326,71 @@ class IntakeView {
         const wsjf = (fit + roi) / comp;
         const wsjfEl = document.getElementById("score-wsjf-val");
         if (wsjfEl) wsjfEl.textContent = wsjf.toFixed(2);
-        // Scores are committed to store inside the promote/reject handlers — no direct mutation here
+    }
+
+    // Persist current vetting modal scores to the store (called on modal close).
+    _commitCurrentScores() {
+        if (!this._activeVettingId) return;
+        const req = store.state.intakeRequests.find(r => r.id === this._activeVettingId);
+        if (!req) return;
+        const fit = parseFloat(document.getElementById("score-fit")?.value) ?? req.scores.stratFit;
+        const roi = parseFloat(document.getElementById("score-roi")?.value) ?? req.scores.roi;
+        const comp = Math.max(parseFloat(document.getElementById("score-complex")?.value) ?? req.scores.complexity, 0.1);
+        const wsjf = (fit + roi) / comp;
+        const scoresChanged = fit !== req.scores.stratFit || roi !== req.scores.roi || comp !== req.scores.complexity;
+        if (!scoresChanged) return;
+        const capturedId = this._activeVettingId;
+        store.commitTransaction(`Update scores for "${req.title}"`, "Vetting Board", (state) => {
+            const r = state.intakeRequests.find(x => x.id === capturedId);
+            if (r) { r.scores = { stratFit: fit, roi, complexity: comp }; r.WSJF = wsjf; }
+        });
+    }
+
+    // Drag-and-drop between sandbox columns (Draft ↔ Under Review ↔ Vetting).
+    _bindDragAndDrop() {
+        const VALID_TARGETS = ["Draft", "Under Review", "Vetting"];
+        let dragId = null;
+
+        document.querySelectorAll(".sandbox-card[draggable='true']").forEach(card => {
+            card.addEventListener("dragstart", e => {
+                dragId = card.dataset.id;
+                card.classList.add("sandbox-card-dragging");
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", dragId);
+            });
+            card.addEventListener("dragend", () => {
+                card.classList.remove("sandbox-card-dragging");
+                document.querySelectorAll(".sandbox-cards-container").forEach(c => c.classList.remove("sandbox-col-drag-over"));
+                dragId = null;
+            });
+        });
+
+        document.querySelectorAll(".sandbox-cards-container").forEach(container => {
+            const colStatus = container.closest(".sandbox-column")?.dataset.status;
+            if (!VALID_TARGETS.includes(colStatus)) return;
+
+            container.addEventListener("dragover", e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                container.classList.add("sandbox-col-drag-over");
+            });
+            container.addEventListener("dragleave", () => {
+                container.classList.remove("sandbox-col-drag-over");
+            });
+            container.addEventListener("drop", e => {
+                e.preventDefault();
+                container.classList.remove("sandbox-col-drag-over");
+                if (!dragId) return;
+                const req = store.state.intakeRequests.find(r => r.id === dragId);
+                if (!req || req.status === colStatus) return;
+                const capturedId = dragId;
+                store.commitTransaction(`Move "${req.title}" to ${colStatus}`, "Intake Board", (state) => {
+                    const r = state.intakeRequests.find(x => x.id === capturedId);
+                    if (r) r.status = colStatus;
+                });
+                this.renderSandboxCards(store.state.intakeRequests);
+            });
+        });
     }
 
     bindEvents() {
@@ -361,10 +434,11 @@ class IntakeView {
                         const okrMatch = store.state.strategy.flatMap(s => s.objectives).find(o =>
                             o.id === (payload.alignedBenefitId === 'ben-transport-transition' ? 'okr-emissions' : 'okr-margin'));
                         const benefitMatch = store.state.benefits.find(b => b.id === payload.alignedBenefitId);
+                        const hasDisbenefitRisk = /compli|safety|regulat|gate|dispatch|inspect|audit/i.test(val);
                         pillsContainer.innerHTML = `
-                            <span class="suggested-pill"><span class="material-symbols-outlined" style="font-size:10px;">track_changes</span>${okrMatch ? okrMatch.metric : 'Emissions'}</span>
-                            <span class="suggested-pill benefit"><span class="material-symbols-outlined" style="font-size:10px;">done_all</span>${benefitMatch ? benefitMatch.name.substring(0, 30) : 'Outcome'}…</span>
-                            <span class="suggested-pill disbenefit"><span class="material-symbols-outlined" style="font-size:10px;">warning</span>Dispatch friction disbenefit risk detected</span>
+                            ${okrMatch ? `<span class="suggested-pill"><span class="material-symbols-outlined" style="font-size:10px;">track_changes</span>${okrMatch.metric}</span>` : ''}
+                            ${benefitMatch ? `<span class="suggested-pill benefit"><span class="material-symbols-outlined" style="font-size:10px;">done_all</span>${benefitMatch.name.substring(0, 30)}…</span>` : ''}
+                            ${hasDisbenefitRisk ? `<span class="suggested-pill disbenefit"><span class="material-symbols-outlined" style="font-size:10px;">warning</span>Potential compliance disbenefit risk detected</span>` : ''}
                         `;
                     }
 
@@ -423,7 +497,7 @@ class IntakeView {
                     opEx,
                     cost: capEx, // backward compat alias
                     effort,
-                    status: "Vetting",
+                    status: "Draft",
                     priorityScore: 50,
                     WSJF: 2.00,
                     scores: { stratFit: 5, roi: 5, complexity: 5 }
@@ -469,11 +543,13 @@ class IntakeView {
         // --- Close vetting modal ---
         const modal = document.getElementById("vetting-modal");
         document.getElementById("vetting-modal-close")?.addEventListener("click", () => {
+            this._commitCurrentScores();
             modal?.classList.add("hidden");
             this._activeVettingId = null;
         });
         modal?.addEventListener("click", (e) => {
             if (e.target === modal) {
+                this._commitCurrentScores();
                 modal.classList.add("hidden");
                 this._activeVettingId = null;
             }
@@ -484,9 +560,10 @@ class IntakeView {
             if (this._activeVettingId) {
                 const req = store.state.intakeRequests.find(r => r.id === this._activeVettingId);
                 if (req) {
+                    const capturedId = this._activeVettingId;
                     store.commitTransaction(`Reject Intake request: "${req.title}"`, "Vetting Board", (state) => {
-                        const idx = state.intakeRequests.findIndex(r => r.id === this._activeVettingId);
-                        if (idx !== -1) state.intakeRequests.splice(idx, 1);
+                        const r = state.intakeRequests.find(x => x.id === capturedId);
+                        if (r) r.status = "Rejected";
                     });
                 }
             }
@@ -527,6 +604,9 @@ class IntakeView {
                     endDate: req.endDate || "",
                     methodology: finalFit > 8 ? "Agile" : "Waterfall",
                     status: "In Flight",
+                    sponsor: req.sponsor || "TBD",
+                    projectManager: "TBD",
+                    isArchived: false,
                     expectedValue: Math.round(finalFit * 10),
                     executionRisk: Math.round(finalComp * 8),
                     financials: {
@@ -538,12 +618,12 @@ class IntakeView {
                 };
                 state.scopes.push(newScope);
 
-                // 3. Default tasks
+                // 3. Default tasks with full schedule fields
                 const ts = Date.now();
                 state.tasks.push(
-                    { id: `task-${ts}-1`, scopeId: newScopeId, title: "Initialise technical architecture and designs", assignee: "Sarah Connor", status: "in_progress", weight: 3 },
-                    { id: `task-${ts}-2`, scopeId: newScopeId, title: "Develop baseline release models and core APIs", assignee: "Bryan Lee", status: "todo", weight: 4 },
-                    { id: `task-${ts}-3`, scopeId: newScopeId, title: "Execute user verification and UAT testing", assignee: "John Doe", status: "todo", weight: 2 }
+                    { id: `task-${ts}-1`, scopeId: newScopeId, title: "Initialise technical architecture and designs", assignee: "Sarah Connor", status: "in_progress", weight: 3, startDate: req.startDate || "", endDate: req.endDate || "", isMilestone: false, dependencies: [], parentTaskId: null },
+                    { id: `task-${ts}-2`, scopeId: newScopeId, title: "Develop baseline release models and core APIs", assignee: "Bryan Lee", status: "todo", weight: 4, startDate: req.startDate || "", endDate: req.endDate || "", isMilestone: false, dependencies: [`task-${ts}-1`], parentTaskId: null },
+                    { id: `task-${ts}-3`, scopeId: newScopeId, title: "Execute user verification and UAT testing", assignee: "John Doe", status: "todo", weight: 2, startDate: req.startDate || "", endDate: req.endDate || "", isMilestone: false, dependencies: [`task-${ts}-2`], parentTaskId: null }
                 );
 
                 // 4. Align to matching benefit

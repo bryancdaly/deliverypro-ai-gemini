@@ -52,6 +52,8 @@ class DeliveryProStore {
                     id: "strat-pacific-lead",
                     title: "Become the leading sustainable agricultural exporter in the Pacific",
                     description: "Maximize regional trade footprint while reducing operational carbon intensity across our supply chains.",
+                    sponsor: "Marcus Aurelius",
+                    portfolioManager: "Sarah Connor",
                     health: 0, // Calculated dynamically
                     isArchived: false,
                     objectives: [
@@ -145,6 +147,8 @@ class DeliveryProStore {
                     description: "Deploy an advanced routing API to optimize deliveries and minimize empty miles.",
                     methodology: "Agile",
                     status: "In Flight",
+                    sponsor: "Marcus Aurelius",
+                    projectManager: "Sarah Connor",
                     startDate: "2024-02-01",
                     endDate: "2024-10-31",
                     expectedValue: 85,
@@ -162,6 +166,8 @@ class DeliveryProStore {
                     description: "Procure and onboard new hybrid-electric heavy commercial freight trucks.",
                     methodology: "Waterfall",
                     status: "In Flight",
+                    sponsor: "Marcus Aurelius",
+                    projectManager: "Bryan Lee",
                     startDate: "2024-01-15",
                     endDate: "2025-03-31",
                     expectedValue: 95,
@@ -179,6 +185,8 @@ class DeliveryProStore {
                     description: "Integrate compliance checklist systems and automated safety gates in regional hubs.",
                     methodology: "Hybrid",
                     status: "Proposed",
+                    sponsor: "Sarah Connor",
+                    projectManager: "John Doe",
                     startDate: "2024-07-01",
                     endDate: "2024-12-31",
                     expectedValue: 40,
@@ -300,7 +308,10 @@ class DeliveryProStore {
             ],
 
             // Central State Transaction Audit Logs
-            auditLog: []
+            auditLog: [],
+
+            // RAID + Change Request Logs (keyed by scopeId)
+            raidLogs: {}
         };
 
         // Load persisted state from LocalStorage if available
@@ -325,6 +336,26 @@ class DeliveryProStore {
                     if (!Array.isArray(parsed.auditLog)) parsed.auditLog = [];
                     if (!Array.isArray(parsed.intakeRequests)) parsed.intakeRequests = this.state.intakeRequests;
                     if (!parsed.programGroups || typeof parsed.programGroups !== 'object') parsed.programGroups = JSON.parse(JSON.stringify(PROGRAM_GROUPS));
+                    if (!parsed.raidLogs || typeof parsed.raidLogs !== 'object') parsed.raidLogs = {};
+                    // Migrate scopes to add sponsor/projectManager if missing
+                    const defaultSponsorPM = {
+                        "scope-route-optimization": { sponsor: "Marcus Aurelius", projectManager: "Sarah Connor" },
+                        "scope-transport-fleet":    { sponsor: "Marcus Aurelius", projectManager: "Bryan Lee" },
+                        "scope-safety-module":      { sponsor: "Sarah Connor",    projectManager: "John Doe" }
+                    };
+                    if (Array.isArray(parsed.scopes)) {
+                        parsed.scopes.forEach(s => {
+                            if (!s.sponsor)        s.sponsor        = defaultSponsorPM[s.id]?.sponsor        || '';
+                            if (!s.projectManager) s.projectManager = defaultSponsorPM[s.id]?.projectManager || '';
+                        });
+                    }
+                    // Migrate strategy to add sponsor/portfolioManager if missing
+                    if (Array.isArray(parsed.strategy)) {
+                        parsed.strategy.forEach(s => {
+                            if (!s.sponsor)           s.sponsor           = 'Marcus Aurelius';
+                            if (!s.portfolioManager)  s.portfolioManager  = 'Sarah Connor';
+                        });
+                    }
                     // Migrate tasks to add new schedule fields
                     if (Array.isArray(parsed.tasks)) {
                         parsed.tasks.forEach(t => {
@@ -414,10 +445,10 @@ class DeliveryProStore {
                 scopeTasks.forEach(task => {
                     const resource = s.resources.find(res => res.name === task.assignee);
                     if (resource) {
-                        // Dynamic allocation calculations
-                        if (task.status === "in_progress") resource.allocated += 15;
-                        else if (task.status === "review") resource.allocated += 10;
-                        else if (task.status === "todo") resource.allocated += 5;
+                        const w = task.weight || 1;
+                        if (task.status === "in_progress") resource.allocated += 5 * w;
+                        else if (task.status === "review")  resource.allocated += 3 * w;
+                        else if (task.status === "todo")    resource.allocated += 1 * w;
                     }
                 });
             }
@@ -600,6 +631,7 @@ class DeliveryProStore {
             this.state.intakeRequests = restoredState.intakeRequests || [];
             this.state.scenario = restoredState.scenario;
             if (restoredState.programGroups) this.state.programGroups = restoredState.programGroups;
+            if (restoredState.raidLogs) this.state.raidLogs = restoredState.raidLogs;
 
             // Remove the transaction and all younger transactions to preserve sequential integrity
             this.state.auditLog.splice(0, txIndex + 1);
@@ -703,7 +735,7 @@ class DeliveryProStore {
             { type: "risk", user: "AI Warning", msg: "Identified disbenefit risk threshold expansion on safety modules." }
         ];
 
-        setInterval(() => {
+        this._pulseIntervalId = setInterval(() => {
             // 15% chance of spawning mock activities
             if (Math.random() < 0.15) {
                 const action = mockActions[Math.floor(Math.random() * mockActions.length)];
@@ -711,10 +743,30 @@ class DeliveryProStore {
             }
         }, 15000);
     }
+
+    destroy() {
+        if (this._pulseIntervalId) clearInterval(this._pulseIntervalId);
+    }
+}
+
+// Detects circular dependency chains in a task list using DFS.
+function hasCyclicDependencies(tasks) {
+    const map = Object.fromEntries(tasks.map(t => [t.id, t.dependencies || []]));
+    const visited = {}, recStack = {};
+    function dfs(id) {
+        visited[id] = recStack[id] = true;
+        for (const dep of (map[id] || [])) {
+            if (!visited[dep] && dfs(dep)) return true;
+            if (recStack[dep]) return true;
+        }
+        recStack[id] = false;
+        return false;
+    }
+    return tasks.some(t => !visited[t.id] && dfs(t.id));
 }
 
 // Global initialization
 const store = new DeliveryProStore();
 if (typeof window !== 'undefined') window.__store = store;
 export default store;
-export { store, escapeHtml, PROGRAM_GROUPS, isScopeInHierarchy, isBenefitInHierarchy };
+export { store, escapeHtml, PROGRAM_GROUPS, isScopeInHierarchy, isBenefitInHierarchy, hasCyclicDependencies };

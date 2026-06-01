@@ -2,7 +2,7 @@
    DELIVERYPRO.AI - AI GANTT CHART COMPONENT
    ========================================================================== */
 
-import { store, isScopeInHierarchy } from './store.js';
+import { store, isScopeInHierarchy, hasCyclicDependencies } from './store.js';
 import { openTaskModal } from './taskModal.js';
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -185,8 +185,10 @@ class GanttView {
         }).join('');
 
         // ── 6. Render ─────────────────────────────────────────────────────────
+        const hasCycles = hasCyclicDependencies(state.tasks);
         container.innerHTML = `
             <div style="display:flex;flex-direction:column;gap:16px;height:100%;">
+                ${hasCycles ? `<div class="cycle-warning-banner"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:middle;margin-right:6px;">warning</span><strong>Circular task dependencies detected</strong> — the Gantt timeline may be inaccurate. Review task dependencies in WBS Schedule.</div>` : ''}
 
                 <!-- Toolbar row: level selector + AI simulator -->
                 <div style="display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;">

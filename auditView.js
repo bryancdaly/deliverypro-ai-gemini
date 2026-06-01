@@ -30,28 +30,18 @@ class AuditView {
         container.innerHTML = `
             <div class="audit-workspace">
                 <div class="audit-timeline">
-                    ${logs.map(tx => {
+                    ${[...logs].reverse().map(tx => {
                         const isAi = tx.actor.includes("AI");
-                        
+                        const diffSummary = tx.diff.join(' · ');
                         return `
-                            <div class="audit-card ${isAi ? 'ai-audit' : ''}">
-                                <div class="audit-card-header">
-                                    <span class="audit-actor-badge">${escapeHtml(tx.actor)}</span>
-                                    <span class="audit-time">${escapeHtml(tx.timestamp)}</span>
-                                </div>
-                                <div class="audit-card-body">
-                                    <h4>${escapeHtml(tx.action)}</h4>
-
-                                    <div class="audit-diff-pane">
-                                        ${tx.diff.map(d => `<div style="margin-bottom:4px; color: var(--color-text-secondary)">• ${escapeHtml(d)}</div>`).join('')}
-                                    </div>
-                                </div>
-                                <div class="audit-card-footer">
-                                    <button class="btn btn-secondary rollback-btn" data-id="${tx.id}" style="border-color: var(--color-warning); color: var(--color-warning);">
-                                        <span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle; margin-right:4px;">restore</span>
-                                        <span>Rollback Action</span>
-                                    </button>
-                                </div>
+                            <div class="audit-row ${isAi ? 'ai-audit' : ''}">
+                                <span class="audit-actor-badge">${escapeHtml(tx.actor)}</span>
+                                <span class="audit-row-action">${escapeHtml(tx.action)}</span>
+                                <span class="audit-row-diff">${escapeHtml(diffSummary)}</span>
+                                <span class="audit-time">${escapeHtml(tx.timestamp)}</span>
+                                <button class="audit-rollback-btn rollback-btn" data-id="${tx.id}" title="Rollback">
+                                    <span class="material-symbols-outlined">restore</span>
+                                </button>
                             </div>
                         `;
                     }).join('')}
@@ -67,12 +57,18 @@ class AuditView {
         rollbackBtns.forEach(btn => {
             btn.addEventListener("click", () => {
                 const txId = btn.dataset.id;
-                
-                // Trigger rollback transaction
+                const txIndex = store.state.auditLog.findIndex(tx => tx.id === txId);
+                // auditLog is stored newest-first, so entries at indices 0..txIndex-1 are newer
+                const newerCount = txIndex > 0 ? txIndex : 0;
+                const warnMsg = newerCount > 0
+                    ? `Rolling back this action will also remove ${newerCount} newer transaction${newerCount !== 1 ? 's' : ''}. This cannot be undone. Continue?`
+                    : "This will undo the most recent transaction. Continue?";
+
+                if (!window.confirm(warnMsg)) return;
+
                 const success = store.rollbackTransaction(txId);
-                
+
                 if (success) {
-                    // Re-render
                     this.render(store.state);
                     this.showNotification("Workspace restored to pre-snapshot state.", "success");
                 } else {

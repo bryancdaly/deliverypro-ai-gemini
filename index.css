@@ -194,6 +194,32 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 0 10px var(--accent-indigo);
 }
 
+/* Drag handle — appears on hover */
+.nav-drag-handle {
+    font-size: 16px !important;
+    color: var(--color-text-muted);
+    opacity: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+    cursor: grab;
+    transition: opacity var(--transition-quick);
+    pointer-events: none; /* drag initiates on the item, not just the handle */
+}
+.nav-item:hover .nav-drag-handle { opacity: 0.5; }
+.nav-item:hover .nav-drag-handle:hover { opacity: 1; }
+
+/* Drag states */
+.nav-item.nav-dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+.nav-item.nav-drag-over-top {
+    border-top: 2px solid var(--accent-indigo) !important;
+}
+.nav-item.nav-drag-over-bot {
+    border-bottom: 2px solid var(--accent-indigo) !important;
+}
+
 /* Simulated Portfolio Pulse Feed */
 #pulse-panel {
     border-top: 1px solid var(--glass-border);
@@ -784,30 +810,34 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--glass-border);
+    background: var(--bg-panel);
 }
 
 .copilot-title {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .robot-icon {
-    font-size: 26px;
+    font-size: 22px;
     color: var(--accent-indigo);
-    filter: drop-shadow(0 0 5px hsla(250, 85%, 58%, 0.15));
+    filter: drop-shadow(0 0 6px hsla(250, 85%, 58%, 0.25));
 }
 
 .copilot-title h3 {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
 }
 
 .copilot-title small {
     font-size: 10px;
     color: var(--color-text-muted);
+    letter-spacing: 0.01em;
 }
 
 .copilot-actions {
@@ -818,75 +848,91 @@ h1, h2, h3, h4, h5, h6 {
 .chat-body {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 24px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 /* Chat Message Bubbles */
 .message {
     display: flex;
-    gap: 12px;
-    max-width: 85%;
-    animation: fadeIn 0.3s ease;
+    gap: 10px;
+    max-width: 88%;
+    animation: fadeIn 0.25s ease;
 }
 
 .message p {
     font-size: 13px;
-    line-height: 1.45;
+    line-height: 1.55;
 }
 
 .message.system-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     max-width: 100%;
-    background: hsla(200, 85%, 55%, 0.05);
-    border: 1px solid hsla(200, 85%, 55%, 0.15);
+    background: hsla(200, 85%, 50%, 0.06);
+    border: 1px solid hsla(200, 85%, 50%, 0.14);
     border-radius: var(--border-radius-md);
-    padding: 12px 16px;
+    padding: 11px 14px;
     color: var(--color-text-secondary);
+    font-size: 12.5px;
+    line-height: 1.55;
 }
 
-.message.system-msg span {
-    font-size: 18px;
+.message.system-msg .material-symbols-outlined {
+    font-size: 16px;
     color: var(--color-info);
+    flex-shrink: 0;
+    margin-top: 1px;
 }
 
 .message.user-msg {
     align-self: flex-end;
     background: hsla(250, 85%, 58%, 0.08);
-    border: 1px solid hsla(250, 85%, 58%, 0.18);
-    border-radius: 16px 16px 2px 16px;
-    padding: 12px 16px;
+    border: 1px solid hsla(250, 85%, 58%, 0.16);
+    border-radius: 14px 14px 3px 14px;
+    padding: 10px 14px;
     color: var(--color-text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    font-family: 'Inter', sans-serif;
 }
 
 .message.ai-msg {
     display: block; /* Override .message flex so markdown children stack vertically */
     align-self: flex-start;
-    background: hsla(220, 20%, 30%, 0.02);
+    background: var(--bg-card);
     border: 1px solid var(--glass-border);
-    border-radius: 16px 16px 16px 2px;
-    padding: 14px 16px;
+    border-radius: 3px 14px 14px 14px;
+    padding: 12px 15px;
     color: var(--color-text-secondary);
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.58;
+    font-family: 'Inter', sans-serif;
 }
 
 /* Rendered markdown typography inside AI bubbles */
 .message.ai-msg p {
-    margin: 0 0 8px;
+    margin: 0 0 7px;
+    font-size: 13px;
 }
 .message.ai-msg p:last-child {
     margin-bottom: 0;
 }
 .message.ai-msg ul,
 .message.ai-msg ol {
-    margin: 4px 0 8px 18px;
+    margin: 5px 0 7px 16px;
     padding: 0;
 }
 .message.ai-msg li {
-    margin-bottom: 4px;
-    line-height: 1.5;
+    margin-bottom: 3px;
+    line-height: 1.55;
+    font-size: 13px;
+}
+.message.ai-msg li + li {
+    margin-top: 1px;
 }
 .message.ai-msg strong {
     color: var(--color-text-primary);
@@ -898,39 +944,84 @@ h1, h2, h3, h4, h5, h6 {
 }
 .message.ai-msg code {
     font-family: 'Fira Code', 'Courier New', monospace;
-    font-size: 11.5px;
-    background: hsla(220, 20%, 50%, 0.1);
-    border: 1px solid var(--glass-border);
-    padding: 1px 5px;
+    font-size: 11px;
+    background: hsla(250, 85%, 58%, 0.07);
+    border: 1px solid hsla(250, 85%, 58%, 0.15);
+    padding: 1px 6px;
     border-radius: 4px;
     color: var(--accent-indigo);
+    letter-spacing: 0.01em;
 }
-.message.ai-msg h1,
-.message.ai-msg h2,
-.message.ai-msg h3,
-.message.ai-msg h4 {
-    font-size: 13px;
+.message.ai-msg h1 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 12px 0 5px;
+    line-height: 1.3;
+}
+.message.ai-msg h2 {
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--color-text-primary);
     margin: 10px 0 4px;
     line-height: 1.3;
 }
+.message.ai-msg h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 9px 0 3px;
+    line-height: 1.3;
+}
+.message.ai-msg h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 9px 0 3px;
+    line-height: 1.3;
+}
 .message.ai-msg h1:first-child,
 .message.ai-msg h2:first-child,
-.message.ai-msg h3:first-child {
+.message.ai-msg h3:first-child,
+.message.ai-msg h4:first-child {
     margin-top: 0;
 }
 .message.ai-msg blockquote {
-    border-left: 3px solid var(--accent-indigo);
+    border-left: 3px solid var(--glass-border-glow);
     margin: 6px 0;
-    padding: 4px 12px;
+    padding: 5px 12px;
     color: var(--color-text-muted);
     font-style: italic;
+    background: hsla(250, 85%, 58%, 0.03);
+    border-radius: 0 4px 4px 0;
 }
 .message.ai-msg hr {
     border: none;
     border-top: 1px solid var(--glass-border);
     margin: 10px 0;
+}
+.message.ai-msg table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 6px 0 8px;
+}
+.message.ai-msg th {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--glass-border);
+    text-align: left;
+}
+.message.ai-msg td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--color-text-secondary);
 }
 
 /* Actionable Change Proposal Cards (Copilot UI Diffs) */
@@ -948,8 +1039,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .proposal-card h4 {
-    font-size: 13px;
+    font-size: 10px;
     text-transform: uppercase;
+    letter-spacing: 0.07em;
     color: var(--accent-indigo);
     font-weight: 700;
     display: flex;
@@ -959,9 +1051,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .proposal-diff-item {
     font-size: 12px;
-    padding: 6px;
+    line-height: 1.5;
+    padding: 6px 10px;
     border-left: 3px solid var(--color-info);
-    background: hsla(200, 85%, 55%, 0.03);
+    background: hsla(200, 85%, 55%, 0.04);
+    border-radius: 0 4px 4px 0;
     margin-bottom: 4px;
 }
 
@@ -989,14 +1083,14 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Suggestions Scroller chips */
 .chat-chips-container {
-    padding: 8px 24px;
+    padding: 8px 16px;
     border-top: 1px solid var(--glass-border);
-    background: hsla(0,0%,0%,0.02);
+    background: hsla(0,0%,0%,0.01);
 }
 
 .chips-scroller {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     overflow-x: auto;
     padding-bottom: 4px;
 }
@@ -1007,25 +1101,27 @@ h1, h2, h3, h4, h5, h6 {
 
 .chip {
     flex-shrink: 0;
-    background: hsla(0, 0%, 0%, 0.02);
+    background: var(--bg-card);
     border: 1px solid var(--glass-border);
-    padding: 6px 12px;
-    border-radius: 40px;
-    font-size: 11px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-family: 'Inter', sans-serif;
     color: var(--color-text-secondary);
     cursor: pointer;
     transition: var(--transition-quick);
+    white-space: nowrap;
 }
 
 .chip:hover {
-    background: hsla(250, 85%, 58%, 0.05);
-    color: var(--color-text-primary);
-    border-color: hsla(250, 85%, 58%, 0.2);
+    background: hsla(250, 85%, 58%, 0.06);
+    color: var(--accent-indigo);
+    border-color: hsla(250, 85%, 58%, 0.22);
 }
 
 /* Chat drawer footer inputs */
 .copilot-footer {
-    padding: 16px 24px 24px;
+    padding: 12px 16px 16px;
     border-top: 1px solid var(--glass-border);
 }
 
@@ -1846,9 +1942,20 @@ h1, h2, h3, h4, h5, h6 {
 /* Vetting Sandbox Board */
 .sandbox-columns-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 16px;
     height: 600px;
+}
+
+.sandbox-card-dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+}
+
+.sandbox-col-drag-over {
+    background: hsla(220, 70%, 55%, 0.08);
+    border-color: var(--accent-indigo);
+    outline: 2px dashed var(--accent-indigo);
 }
 
 .sandbox-column {
@@ -2121,6 +2228,26 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.cycle-warning-banner {
+    background: hsla(38, 90%, 55%, 0.08);
+    border: 1px solid hsla(38, 90%, 55%, 0.3);
+    border-radius: var(--border-radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--color-warning);
+    line-height: 1.5;
+}
+
+.finance-exclusion-notice {
+    background: hsla(38, 90%, 55%, 0.08);
+    border: 1px solid hsla(38, 90%, 55%, 0.3);
+    border-radius: var(--border-radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--color-warning);
+    line-height: 1.5;
 }
 
 .finance-metrics-row {
@@ -2466,110 +2593,453 @@ h1, h2, h3, h4, h5, h6 {
 .audit-timeline {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
     position: relative;
-    padding-left: 24px;
 }
 
-.audit-timeline::before {
-    content: '';
-    position: absolute;
-    left: 7px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--glass-border);
-}
-
-.audit-card {
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-md);
-    padding: 16px;
-    position: relative;
-    animation: fadeIn 0.3s ease;
-}
-
-.audit-card::before {
-    content: '';
-    position: absolute;
-    left: -21px;
-    top: 22px;
-    height: 10px;
-    width: 10px;
-    background: var(--bg-base);
-    border: 2px solid var(--glass-border);
-    border-radius: 50%;
-}
-
-.audit-card.ai-audit::before {
-    border-color: var(--accent-indigo);
-    background: var(--accent-indigo);
-    box-shadow: 0 0 6px var(--accent-indigo);
-}
-
-.audit-card-header {
-    display: flex;
-    justify-content: space-between;
+.audit-row {
+    display: grid;
+    grid-template-columns: 130px 200px 1fr auto auto;
     align-items: center;
-    border-bottom: 1px solid hsla(0,0%,0%,0.02);
-    padding-bottom: 10px;
+    gap: 10px;
+    padding: 6px 10px;
+    border-bottom: 1px solid hsla(0,0%,100%,0.04);
+    animation: fadeIn 0.2s ease;
+    transition: background var(--transition-quick);
+}
+
+.audit-row:hover {
+    background: var(--bg-card-hover);
 }
 
 .audit-actor-badge {
     font-size: 10px;
     font-weight: 700;
-    background: hsla(0,0%,0%,0.03);
-    padding: 2px 8px;
+    background: hsla(0,0%,100%,0.05);
+    padding: 2px 7px;
     border-radius: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.audit-card.ai-audit .audit-actor-badge {
-    background: hsla(250, 85%, 58%, 0.08);
+.audit-row.ai-audit .audit-actor-badge {
+    background: hsla(250, 85%, 58%, 0.12);
     color: var(--accent-indigo);
 }
 
-.audit-time {
+.audit-row-action {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.audit-row-diff {
     font-size: 11px;
     color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: monospace;
 }
 
-.audit-card-body {
-    margin-top: 12px;
+.audit-time {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
 }
 
-.audit-card-body h4 {
-    font-size: 13px;
+.audit-rollback-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    transition: all var(--transition-quick);
+    line-height: 1;
 }
 
-.audit-card-body p {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    margin-top: 4px;
+.audit-rollback-btn .material-symbols-outlined {
+    font-size: 15px;
 }
 
-.audit-diff-pane {
-    margin-top: 10px;
-    background: hsla(0,0%,0%,0.02);
+.audit-rollback-btn:hover {
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    background: hsla(38,100%,50%,0.06);
+}
+
+/* ==========================================================================
+   RAID & CHANGE REQUEST LOG VIEW
+   ========================================================================== */
+
+.raid-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Project selector tabs */
+.raid-project-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.raid-proj-btn {
+    background: none;
     border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-sm);
-    padding: 8px 12px;
+    border-radius: 20px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 4px 12px;
+    transition: all var(--transition-quick);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.raid-proj-btn:hover  { background: var(--bg-card-hover); color: var(--color-text-primary); }
+.raid-proj-btn.active {
+    background: hsla(250,85%,58%,0.12);
+    border-color: var(--accent-indigo);
+    color: var(--accent-indigo);
+    font-weight: 600;
+}
+
+/* Log type tabs bar */
+.raid-tabs-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.raid-log-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.raid-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 12px;
+    transition: all var(--transition-quick);
+    position: relative;
+}
+
+.raid-tab-btn .material-symbols-outlined { font-size: 16px; }
+.raid-tab-btn:hover  { background: var(--bg-card-hover); color: var(--color-text-primary); }
+.raid-tab-btn.active {
+    background: hsla(250,85%,58%,0.08);
+    border-color: var(--tab-color, var(--accent-indigo));
+    color: var(--tab-color, var(--accent-indigo));
+    font-weight: 600;
+}
+
+.raid-tab-badge {
+    background: var(--color-warning);
+    color: #000;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    line-height: 1.4;
+}
+
+.raid-add-btn { white-space: nowrap; }
+
+/* Stats tiles */
+.raid-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) 1.6fr;
+    gap: 10px;
+}
+
+.raid-stat-tile {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    padding: 12px 16px;
+    min-width: 0;
+}
+
+.raid-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+
+.raid-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    font-family: 'Outfit', sans-serif;
+}
+
+.raid-stat-sub {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.raid-stat-chart { padding: 12px 16px; }
+
+.raid-status-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+    gap: 2px;
+}
+
+.raid-bar-seg {
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.raid-bar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+}
+
+.raid-bar-legend i {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+    font-style: normal;
+}
+
+/* Table */
+.raid-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--glass-border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
+}
+
+.raid-table {
+    width: 100%;
+    min-width: 800px;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.raid-table thead th {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--color-text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 8px 10px;
+    text-align: left;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.raid-sort-th {
+    cursor: pointer;
+    user-select: none;
+}
+.raid-sort-th:hover { color: var(--accent-indigo); background: var(--bg-card-hover); }
+
+.raid-filter-row th {
+    background: var(--bg-card);
+    padding: 4px 6px 6px;
+    position: sticky;
+    top: 33px;
+    z-index: 2;
+    border-bottom: 2px solid var(--glass-border);
+}
+
+.raid-filter {
+    width: 100%;
+    background: hsla(0,0%,100%,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    font-family: inherit;
+    padding: 3px 5px;
+    cursor: pointer;
+    outline: none;
+}
+.raid-filter:focus { border-color: var(--accent-indigo); }
+.raid-filter option { background: var(--bg-panel); color: var(--color-text-primary); }
+
+.raid-table tbody tr.raid-table-row {
+    border-bottom: 1px solid hsla(0,0%,100%,0.03);
+    transition: background var(--transition-quick);
+}
+.raid-table-row:hover { background: var(--bg-card-hover); }
+
+.raid-table td {
+    padding: 7px 10px;
+    vertical-align: top;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.raid-id-cell {
     font-family: monospace;
     font-size: 11px;
+    color: var(--color-text-muted) !important;
+    font-weight: 600;
 }
 
-.audit-card-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 14px;
-    padding-top: 10px;
-    border-top: 1px solid hsla(0,0%,0%,0.02);
+.raid-title-cell {
+    overflow: hidden;
+    white-space: normal !important;
 }
 
-.audit-card-footer .btn {
-    padding: 6px 12px;
+.raid-title-text {
+    font-weight: 500;
+    color: var(--color-text-primary);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.raid-desc-preview {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+.raid-level-badge {
     font-size: 11px;
+    font-weight: 700;
 }
+
+.raid-status-badge {
+    display: inline-block;
+    border: 1px solid;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    white-space: nowrap;
+}
+
+.raid-score-badge {
+    display: inline-block;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+}
+
+.raid-row-actions {
+    white-space: nowrap;
+    text-align: right;
+    padding-right: 6px !important;
+    vertical-align: middle !important;
+}
+
+.raid-edit-btn, .raid-delete-btn {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 3px 4px;
+    transition: all var(--transition-quick);
+    line-height: 1;
+}
+.raid-edit-btn .material-symbols-outlined,
+.raid-delete-btn .material-symbols-outlined { font-size: 15px; }
+.raid-edit-btn:hover   { color: var(--accent-indigo); background: hsla(250,85%,58%,0.1); }
+.raid-delete-btn:hover { color: var(--color-danger);  background: hsla(0,85%,58%,0.1);   }
+
+.raid-empty-row {
+    padding: 24px 16px !important;
+    color: var(--color-text-muted) !important;
+    font-style: italic;
+    font-size: 12px !important;
+    text-align: center;
+}
+
+/* RAID form (inside modal) */
+.raid-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+}
+
+.raid-form-row { display: flex; flex-direction: column; gap: 4px; }
+.raid-form-row.span-2 { grid-column: 1 / -1; }
+
+.raid-form-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.raid-form-input {
+    background: hsla(0,0%,100%,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color var(--transition-quick);
+}
+.raid-form-input:focus  { border-color: var(--accent-indigo); }
+.raid-form-input option { background: var(--bg-panel); }
+.raid-form-textarea     { resize: vertical; min-height: 56px; }
 
 /* ==========================================================================
    NOTIFICATION SYSTEM (TOASTS)

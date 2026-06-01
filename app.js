@@ -13,6 +13,7 @@ import GanttView from './ganttView.js';
 import ResourceView from './resourceView.js';
 import CopilotView from './copilotView.js';
 import AuditView from './auditView.js';
+import RaidView from './raidView.js';
 
 class DeliveryProApp {
     constructor() {
@@ -28,7 +29,8 @@ class DeliveryProApp {
             schedule: new ScheduleView(),
             gantt: new GanttView(),
             resources: new ResourceView(),
-            audit: new AuditView()
+            audit: new AuditView(),
+            raid: new RaidView()
         };
 
         // Copilot drawer is persistent and self-initialized
@@ -40,8 +42,12 @@ class DeliveryProApp {
     init() {
         // Initialize Copilot View Controller
         this.copilot = new CopilotView();
+
+        // Restore persisted nav order before binding click events
+        this._restoreNavOrder();
         
         this.bindEvents();
+        this._initNavDragReorder();
         
         // Subscribe to Store updates
         store.subscribe("app-router", (state) => this.renderActiveView(state));
@@ -58,6 +64,87 @@ class DeliveryProApp {
         // Populate initial Portfolio Pulse Feed items in UI
         this.populateInitialPulseEvents();
     }
+
+    // ── Nav drag-reorder ─────────────────────────────────────────────────────
+
+    _restoreNavOrder() {
+        try {
+            const saved = JSON.parse(localStorage.getItem('dp_nav_order') || 'null');
+            if (!Array.isArray(saved) || saved.length < 2) return;
+            const nav = document.querySelector('.sidebar-nav');
+            if (!nav) return;
+            saved.forEach(view => {
+                const el = nav.querySelector(`.nav-item[data-view="${view}"]`);
+                if (el) nav.appendChild(el);
+            });
+        } catch (_) {}
+    }
+
+    _initNavDragReorder() {
+        const nav = document.querySelector('.sidebar-nav');
+        if (!nav) return;
+
+        // Inject drag handles and make items draggable
+        nav.querySelectorAll('.nav-item').forEach(item => {
+            if (item.querySelector('.nav-drag-handle')) return; // already injected
+            item.setAttribute('draggable', 'true');
+            const handle = document.createElement('span');
+            handle.className = 'nav-drag-handle material-symbols-outlined';
+            handle.textContent = 'drag_indicator';
+            handle.setAttribute('aria-hidden', 'true');
+            item.appendChild(handle);
+        });
+
+        let dragSrc = null;
+
+        nav.addEventListener('dragstart', e => {
+            const item = e.target.closest('.nav-item');
+            if (!item) return;
+            dragSrc = item;
+            item.classList.add('nav-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', item.dataset.view);
+        });
+
+        nav.addEventListener('dragend', () => {
+            nav.querySelectorAll('.nav-item').forEach(i => {
+                i.classList.remove('nav-dragging', 'nav-drag-over-top', 'nav-drag-over-bot');
+            });
+            dragSrc = null;
+        });
+
+        nav.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const item = e.target.closest('.nav-item');
+            if (!item || item === dragSrc) return;
+            nav.querySelectorAll('.nav-item').forEach(i => i.classList.remove('nav-drag-over-top', 'nav-drag-over-bot'));
+            const rect   = item.getBoundingClientRect();
+            const midY   = rect.top + rect.height / 2;
+            item.classList.add(e.clientY < midY ? 'nav-drag-over-top' : 'nav-drag-over-bot');
+        });
+
+        nav.addEventListener('dragleave', e => {
+            const item = e.target.closest('.nav-item');
+            if (item) item.classList.remove('nav-drag-over-top', 'nav-drag-over-bot');
+        });
+
+        nav.addEventListener('drop', e => {
+            e.preventDefault();
+            if (!dragSrc) return;
+            const target = e.target.closest('.nav-item');
+            if (!target || target === dragSrc) return;
+            const rect  = target.getBoundingClientRect();
+            const after = e.clientY >= rect.top + rect.height / 2;
+            nav.insertBefore(dragSrc, after ? target.nextSibling : target);
+
+            // Persist
+            const order = [...nav.querySelectorAll('.nav-item')].map(i => i.dataset.view);
+            localStorage.setItem('dp_nav_order', JSON.stringify(order));
+        });
+    }
+
+    // ── Navigation binding ───────────────────────────────────────────────────
 
     bindEvents() {
         // Navigation clicks
@@ -124,7 +211,7 @@ class DeliveryProApp {
 
     handleHashRoute() {
         const hash = window.location.hash.replace("#", "");
-        const validViews = ["strategy", "intake", "optimizer", "finance", "kanban", "schedule", "gantt", "resources", "synthesizer", "audit"];
+        const validViews = ["strategy", "intake", "optimizer", "finance", "kanban", "schedule", "gantt", "resources", "synthesizer", "audit", "raid"];
         
         let targetView = "strategy";
         if (hash && validViews.includes(hash)) {
@@ -158,7 +245,8 @@ class DeliveryProApp {
             kanban: { title: "Sprint Kanban Board", desc: "Agile sprint execution and task-level state tracking boards" },            schedule: { title: "WBS Schedule", desc: "Work breakdown structure with tasks, milestones, dates, and dependencies" },            gantt: { title: "AI Gantt Timeline", desc: "Horizontal schedule delivery timelines, milestone phase gates, and critical path analysis" },
             resources: { title: "Resource Allocator", desc: "Weekly workload bandwidth matrices and allocations tracking" },
             synthesizer: { title: "Executive Synthesizer", desc: "One-click executive briefs and print-ready presentation briefs" },
-            audit: { title: "Audit Log Ledger", desc: "Chronological transaction snapshots log and rollback controllers" }
+            audit: { title: "Audit Log Ledger", desc: "Chronological transaction snapshots log and rollback controllers" },
+            raid: { title: "RAID & Change Log", desc: "Risks, Issues, Assumptions, Decisions and Change Requests per project" }
         };
 
         if (titleEl && descEl && details[view]) {
@@ -236,7 +324,8 @@ class DeliveryProApp {
         state.benefits.forEach(b => {
             if (!b.isDisbenefit && isBenefitInHierarchy(b, state)) {
                 countBens++;
-                sumPcts += ((b.metric.current - b.metric.baseline) / (b.metric.target - b.metric.baseline)) * 100;
+                const denom = b.metric.target - b.metric.baseline;
+                if (denom !== 0) sumPcts += ((b.metric.current - b.metric.baseline) / denom) * 100;
             }
         });
         const avgPct = countBens > 0 ? Math.round(sumPcts / countBens) : 0;
@@ -376,6 +465,38 @@ class DeliveryProApp {
         // Find strategic, resource and financial aggregates
         const totalBudget = state.scopes.reduce((acc, curr) => acc + curr.financials.capEx.plan + curr.financials.opEx.plan, 0);
         const totalSpend = state.scopes.reduce((acc, curr) => acc + curr.financials.capEx.actual + curr.financials.opEx.actual, 0);
+
+        // ── Derive report title + sponsor/PM from active hierarchy ──
+        const level  = state.scenario.activeHierarchyLevel || 'enterprise';
+        const nodeId = state.scenario.activeNodeId;
+        let reportTitle, reportSponsor, reportManager, reportSubtitle;
+
+        if (level === 'project' && nodeId) {
+            const scope      = state.scopes.find(s => s.id === nodeId);
+            reportTitle      = scope ? scope.name : 'Project Report';
+            reportSubtitle   = 'Project Health Report';
+            reportSponsor    = scope?.sponsor || '—';
+            reportManager    = scope?.projectManager || '—';
+        } else if (level === 'program' && nodeId) {
+            const group      = (state.programGroups || PROGRAM_GROUPS)[nodeId];
+            reportTitle      = group ? `${group.name} Program` : 'Program Report';
+            reportSubtitle   = 'Program Health Report';
+            // Derive from member scopes — use first scope's sponsor/PM
+            const memberScope = group ? state.scopes.find(s => group.scopeIds.includes(s.id)) : null;
+            reportSponsor    = memberScope?.sponsor || '—';
+            reportManager    = memberScope?.projectManager || '—';
+        } else if (level === 'portfolio') {
+            reportTitle      = state.strategy[0]?.title || 'Portfolio';
+            reportSubtitle   = 'Portfolio Health Report';
+            reportSponsor    = state.strategy[0]?.sponsor || '—';
+            reportManager    = state.strategy[0]?.portfolioManager || '—';
+        } else {
+            // enterprise
+            reportTitle      = 'Enterprise Portfolio';
+            reportSubtitle   = 'Enterprise Portfolio Health Report';
+            reportSponsor    = state.strategy[0]?.sponsor || '—';
+            reportManager    = state.strategy[0]?.portfolioManager || '—';
+        }
         
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px; margin: 0 auto; padding-top: 10px;">
@@ -387,9 +508,17 @@ class DeliveryProApp {
                 </div>
 
                 <div class="glass-panel" style="display:flex; flex-direction:column; gap:20px;">
-                    <div style="border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; display:flex; justify-content:space-between; align-items:center;">
-                        <h4 style="font-size:16px;">DeliveryPro.AI Portfolio Health Report</h4>
-                        <span class="tier-badge" style="background: hsla(165,80%,45%,0.1); color: var(--color-success);">Q3 High-Confidence</span>
+                    <div style="border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-muted);margin-bottom:4px;">${escapeHtml(reportSubtitle)}</div>
+                            <h4 style="font-size:17px;line-height:1.25;max-width:540px;">${escapeHtml(reportTitle)}</h4>
+                            <div style="display:flex;gap:20px;margin-top:8px;">
+                                <span style="font-size:11px;color:var(--color-text-muted);"><span style="font-weight:600;color:var(--color-text-secondary);">Sponsor:</span> ${escapeHtml(reportSponsor)}</span>
+                                <span style="font-size:11px;color:var(--color-text-muted);"><span style="font-weight:600;color:var(--color-text-secondary);">Manager:</span> ${escapeHtml(reportManager)}</span>
+                                <span style="font-size:11px;color:var(--color-text-muted);"><span style="font-weight:600;color:var(--color-text-secondary);">Date:</span> ${new Date().toLocaleDateString('en-NZ',{day:'numeric',month:'long',year:'numeric'})}</span>
+                            </div>
+                        </div>
+                        <span class="tier-badge" style="background: hsla(165,80%,45%,0.1); color: var(--color-success);flex-shrink:0;">Q3 High-Confidence</span>
                     </div>
 
                     <!-- Details grid -->
@@ -459,6 +588,86 @@ class DeliveryProApp {
                                     </div>
                                 </div>
                             `).join('');
+                        })()}
+                    </div>
+
+                    <!-- RAID Summary -->
+                    <div style="border-top:1px solid var(--glass-border); padding-top:16px;">
+                        <h5 style="text-transform:uppercase; font-size:11px; color:var(--color-text-secondary); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">shield_with_heart</span>RAID &amp; Change Request Summary
+                        </h5>
+                        ${(() => {
+                            const raid = state.raidLogs || {};
+                            const scopeMap = Object.fromEntries(state.scopes.map(s => [s.id, s.name]));
+                            const activeStatuses = {
+                                risks:       e => e.status === 'Open' || e.status === 'Mitigating',
+                                issues:      e => e.status === 'Open' || e.status === 'In Progress',
+                                assumptions: e => e.status === 'Active',
+                                decisions:   e => e.status === 'Pending',
+                                changes:     e => ['Submitted','Under Review','Draft'].includes(e.status)
+                            };
+                            const LEVEL_COLOR = { Critical:'var(--color-danger)', High:'var(--color-warning)', Medium:'var(--accent-indigo)', Low:'var(--color-success)' };
+                            const STS_COLOR   = { Open:'var(--color-warning)', 'In Progress':'var(--accent-indigo)', Mitigating:'var(--accent-indigo)', Active:'var(--accent-indigo)', Pending:'var(--color-warning)', Submitted:'var(--accent-indigo)', 'Under Review':'var(--color-warning)', Draft:'var(--color-text-muted)' };
+                            const ICONS       = { risks:'warning', issues:'bug_report', assumptions:'lightbulb', decisions:'gavel', changes:'change_circle' };
+                            const COLORS      = { risks:'var(--color-warning)', issues:'var(--color-danger)', assumptions:'var(--accent-indigo)', decisions:'var(--color-success)', changes:'#a78bfa' };
+                            const LABELS      = { risks:'Risks', issues:'Issues', assumptions:'Assumptions', decisions:'Decisions', changes:'Change Requests' };
+
+                            // Build aggregate counts per type
+                            let totals = { risks:0, issues:0, assumptions:0, decisions:0, changes:0 };
+                            Object.values(raid).forEach(scopeLog => {
+                                Object.keys(totals).forEach(type => {
+                                    totals[type] += ((scopeLog[type] || []).filter(e => !e.isArchived && activeStatuses[type](e))).length;
+                                });
+                            });
+
+                            // Collect open high-severity items across all scopes
+                            const hotItems = [];
+                            Object.entries(raid).forEach(([scopeId, scopeLog]) => {
+                                const sName = scopeMap[scopeId] || scopeId;
+                                (scopeLog.risks || []).filter(e => !e.isArchived && e.status === 'Open' && (e.probability === 'High' || e.impact === 'High')).forEach(e => {
+                                    hotItems.push({ type: 'risks', label: e.title, sub: `${e.probability}×${e.impact} · ${sName}`, color: 'var(--color-warning)' });
+                                });
+                                (scopeLog.issues || []).filter(e => !e.isArchived && ['Critical','High'].includes(e.priority) && e.status !== 'Resolved' && e.status !== 'Closed').forEach(e => {
+                                    hotItems.push({ type: 'issues', label: e.title, sub: `${e.priority} · ${sName}`, color: 'var(--color-danger)' });
+                                });
+                                (scopeLog.changes || []).filter(e => !e.isArchived && e.status === 'Under Review' && ['Critical','High'].includes(e.priority)).forEach(e => {
+                                    const cd = Number(e.costDelta)||0;
+                                    const sd = Number(e.scheduleDelta)||0;
+                                    hotItems.push({ type: 'changes', label: e.title, sub: `${e.changeType}${cd ? ` · ${cd>=0?'+':''}$${Math.abs(cd).toLocaleString()}` : ''}${sd ? ` · ${sd>=0?'+':''}${sd}d` : ''} · ${sName}`, color: '#a78bfa' });
+                                });
+                            });
+
+                            const totalActive = Object.values(totals).reduce((a,b)=>a+b,0);
+
+                            return `
+                                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;">
+                                    ${Object.keys(totals).map(type => `
+                                        <div style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:8px;padding:10px 12px;text-align:center;">
+                                            <span class="material-symbols-outlined" style="font-size:16px;color:${COLORS[type]};display:block;margin-bottom:4px;">${ICONS[type]}</span>
+                                            <div style="font-size:20px;font-weight:700;font-family:'Outfit',sans-serif;color:${totals[type]>0?COLORS[type]:'var(--color-text-muted)'};">${totals[type]}</div>
+                                            <div style="font-size:9px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;">${LABELS[type]}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                ${totalActive === 0
+                                    ? `<p style="font-size:11px;color:var(--color-text-muted);font-style:italic;padding:4px 0;">No active RAID items or pending change requests.</p>`
+                                    : hotItems.length === 0
+                                        ? `<p style="font-size:11px;color:var(--color-text-muted);padding:4px 0;">No high-severity items requiring immediate attention.</p>`
+                                        : `<div style="display:flex;flex-direction:column;gap:4px;">
+                                            <div style="font-size:10px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 4px;">Needs Attention</div>
+                                            ${hotItems.slice(0,5).map(item => `
+                                                <div class="ledger-item" style="padding:8px 12px;">
+                                                    <span class="material-symbols-outlined" style="font-size:14px;color:${item.color};flex-shrink:0;">${ICONS[item.type]}</span>
+                                                    <div style="flex:1;min-width:0;">
+                                                        <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.label}</div>
+                                                        <div style="font-size:10px;color:var(--color-text-muted);">${item.sub}</div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                            ${hotItems.length > 5 ? `<div style="font-size:10px;color:var(--color-text-muted);padding:4px 12px;">+${hotItems.length-5} more items — see RAID & Change Log for full details.</div>` : ''}
+                                        </div>`
+                                }
+                            `;
                         })()}
                     </div>
 

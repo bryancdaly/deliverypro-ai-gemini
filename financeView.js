@@ -43,8 +43,21 @@ class FinanceView {
         const totalActual = totalCapExActual + totalOpExActual;
         const totalForecast = totalActual + (totalCapExEtc + totalOpExEtc);
 
+        // Collect excluded scopes visible in the current hierarchy level
+        const excludedScopes = state.scopes.filter(s =>
+            !s.isArchived &&
+            !state.scenario.includedProjectIds.includes(s.id) &&
+            scopeInHierarchy(s.id)
+        );
+
         container.innerHTML = `
             <div class="finance-workspace">
+                ${excludedScopes.length > 0 ? `
+                <div class="finance-exclusion-notice">
+                    <span class="material-symbols-outlined" style="font-size:15px;vertical-align:middle;margin-right:6px;">info</span>
+                    <strong>${excludedScopes.length} project${excludedScopes.length !== 1 ? 's' : ''} excluded via Portfolio Optimizer</strong> — not reflected in the totals below:
+                    <span style="color:var(--color-text-muted);">${excludedScopes.map(s => s.name).join(', ')}</span>
+                </div>` : ''}
                 <!-- KPI financial row -->
                 <div class="finance-metrics-row">
                     <div class="glass-panel cons-card">

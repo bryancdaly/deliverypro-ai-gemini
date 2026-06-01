@@ -4,7 +4,7 @@
    either view is immediately reflected in the other.
    ========================================================================== */
 
-import { store, isScopeInHierarchy } from './store.js';
+import { store, isScopeInHierarchy, hasCyclicDependencies } from './store.js';
 import { openTaskModal } from './taskModal.js';
 
 class ScheduleView {
@@ -39,8 +39,10 @@ class ScheduleView {
             ? `<span style="color:var(--accent-indigo);font-size:9px;margin-left:2px;">${this._sort.dir === 'asc' ? '▲' : '▼'}</span>`
             : `<span style="opacity:0.25;font-size:9px;margin-left:2px;">▲</span>`;
 
+        const hasCycles = hasCyclicDependencies(state.tasks);
         container.innerHTML = `
             <div class="schedule-container">
+                ${hasCycles ? `<div class="cycle-warning-banner"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:middle;margin-right:6px;">warning</span><strong>Circular task dependencies detected</strong> — schedule order may be inaccurate. Check dependency arrows below.</div>` : ''}
                 <div class="schedule-toolbar">
                     <div style="display:flex;align-items:center;gap:12px;">
                         <span style="font-size:13px;color:var(--color-text-secondary);">
